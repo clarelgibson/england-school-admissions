@@ -79,7 +79,7 @@ This dashboard sets out to help parents answer those questions and more in order
 
 ### Steps Taken
 
-1. Downloaded required data (see the wiki for details).
+1. Downloaded required data (see the [wiki page](https://github.com/clarelgibson/england-school-admissions/wiki/Source-Data) for details).
 2. Cleaned and modelled the data using R Tidyverse.
 3. Built the dashboard using Tableau Public.
 
