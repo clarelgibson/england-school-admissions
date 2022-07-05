@@ -2,6 +2,8 @@ Source data preparation for the England school admissions dashboard
 ================
 Clare Gibson
 
+-   [Introduction](#introduction)
+
 # Introduction
 
 This notebook serves as the documented code to read and prepare data for

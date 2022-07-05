@@ -1,7 +1,10 @@
 ---
 title: "Source data preparation for the England school admissions dashboard"
 author: "Clare Gibson"
-output: github_document
+output:
+  github_document:
+    toc: true
+    toc_depth: 3
 ---
 
 ```{r setup, include=FALSE}
