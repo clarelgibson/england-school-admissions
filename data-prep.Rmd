@@ -1,8 +1,6 @@
 ---
-title: "School Admissions Dashboard"
-subtitle: "Preparing the data for analysis"
+title: "Source data preparation for the England school admissions dashboard"
 author: "Clare Gibson"
-date: "`r Sys.Date()`"
 output: github_document
 ---
 
