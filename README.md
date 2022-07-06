@@ -22,7 +22,9 @@
     <a href="https://github.com/clarelgibson/england-school-admissions"><strong>Explore the docs »</strong></a>
     <br />
     <br />
-    <a href="https://github.com/clarelgibson/england-school-admissions">View Demo</a>
+    <a href="https://public.tableau.com/views/2022SchoolAdmissionsDashboard/2022SchoolAdmissionsDashboard?:language=en-US&:display_count=n&:origin=viz_share_link">View Dashboard</a> <!-- LINK TO BE UPDATED WHEN DASHBOARD PUBLISHED -->
+    ·
+    <a href="https://github.com/clarelgibson/england-school-admissions/wiki">Project Wiki</a>
     ·
     <a href="https://github.com/clarelgibson/england-school-admissions/issues">Report Bug</a>
     ·
