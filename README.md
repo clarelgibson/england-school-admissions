@@ -62,10 +62,10 @@
 
 Applying for a place for your child at primary or secondary school in England can be a daunting task. In some regions, parents have a plethora of schools to choose from. Having options is no bad thing, but in order to make an informed choice parents need answers to questions such as:
 
-* How many preferences can I list on my application form?
-* What is the likelihood of getting an offer at my preferred school based on my circumstances?
-* Which schools are oversubscribed?
-* Which schools are the top performers in my area?
+- How many preferences can I list on my application form?
+- What is the likelihood of getting an offer at my preferred school based on my circumstances?
+- Which schools are oversubscribed?
+- Which schools are the top performers in my area?
 
 This dashboard sets out to help parents answer those questions and more in order to better understand the landscape before submitting their application. The dashboard uses data published by UK Government on school admissions and performance at both primary and secondary level, and covers all local authorities in England.
 
@@ -84,6 +84,8 @@ This dashboard sets out to help parents answer those questions and more in order
 1. Downloaded required data (see the [wiki page](https://github.com/clarelgibson/england-school-admissions/wiki/Source-Data) for details).
 2. Cleaned and modelled the data using R Tidyverse.
 3. Built the dashboard using Tableau Public.
+
+The [project wiki](https://github.com/clarelgibson/england-school-admissions/wiki) contains more information about how this repo is structured and how the data was collected.
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
