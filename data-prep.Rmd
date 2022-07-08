@@ -38,7 +38,7 @@ library(lubridate)      # for working with dates
 ```
 
 ## Custom functions
-I have created several custom functions to assist with data prep. We can load these functions by sourcing the `utils.R` script in the working repository.
+I have created several custom functions to assist with data prep. Load these functions by sourcing the `utils.R` script in the working directory.
 ```{r custom-functions}
 # Custom functions
 source("utils.R")
@@ -48,9 +48,17 @@ source("utils.R")
 ## Offers
 This file contains data relating to the number of offers made to applicants for secondary and primary school places since 2014, and the proportion which received preferred offers. Data is aggregated at the school level. Further details including an explanation of the terminology used in this dataset can be found [here](https://drive.google.com/drive/u/1/folders/1bbnbd9d4HDn3yXIIhaRSigZV46KpCyKy).
 
-```{r read-offers}
+The source data is stored in a CSV file on [Google Drive](https://drive.google.com/drive/u/1/folders/1lFZhobbGoCKKEtaZ5CDiphTbOxcbvJzW). We can read the CSV file directly from the source location using the custom function `read_csv_gdrive()`. When reading in source data, I usually assign it to a variable with the prefix `src_` to indicate that this is source data. Once I start to modify the data, I remove the prefix. That way, I always have a copy of the original source data in its unaltered form to refer back to.
+
+```{r read-offers, message=TRUE}
 # Read in the source data for offers
 src_offers_path <- "https://drive.google.com/file/d/1bG0a0WRg-LEnASl6M3J0qyHJA_cMY1CQ/view?usp=sharing"
 src_offers <- read_csv_gdrive(src_offers_path)
 ```
 
+```{r offers-spec}
+# List the columns and data types in the dataframe
+spec(src_offers)
+```
+
+From the code outputs above, we can see that this dataframe has `r nrow(src_offers)` rows and `r ncol(src_offers)` columns (a mix of character and numeric data types). The columns include some identifiers for time, geography and school, some descriptive dimensions for the number of preferences and type of school and some measures relating to the number of applications and offers made. The grain of the data is that each row represents a single school for a single academic year.
