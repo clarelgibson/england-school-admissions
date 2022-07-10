@@ -15,7 +15,9 @@ read_csv_gdrive <- function(link) {
   download_str <- "https://docs.google.com/uc?id=%s&export=download"
   download_url <- sprintf(download_str, doc_id)
   
-  df <- read_csv(download_url) %>% 
-    clean_names
+  df <- read_csv(download_url,
+                 col_types = cols(.default = col_character())) %>% 
+    type_convert() %>% 
+    clean_names()
   return(df)
 }
