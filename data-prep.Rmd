@@ -45,26 +45,10 @@ source("utils.R")
 ```
 
 # Read data
-## Offers
-This file contains data relating to the number of offers made to applicants for secondary and primary school places since 2014, and the proportion which received preferred offers. Data is aggregated at the school level. Further details including an explanation of the terminology used in this dataset can be found [here](https://drive.google.com/drive/u/1/folders/1bbnbd9d4HDn3yXIIhaRSigZV46KpCyKy).
+## Info
+This file contains descriptive fields relating to primary and secondary schools across all local authorities in England. It excludes nurseries, special schools, children's centers, pupil referral units and post-16 education. We can consider this largely to be the dimensional data for the dashboard, while the other datasets for Offers and Performance can be considered to be the measures.
 
 The source data is stored in a CSV file on [Google Drive](https://drive.google.com/drive/u/1/folders/1lFZhobbGoCKKEtaZ5CDiphTbOxcbvJzW). We can read the CSV file directly from the source location using the custom function `read_csv_gdrive()`. When reading in source data, I usually assign it to a variable with the prefix `src_` to indicate that this is source data. Once I start to modify the data, I remove the prefix. That way, I always have a copy of the original source data in its unaltered form to refer back to.
-
-```{r read-offers}
-# Read in the source data for offers
-src_offers_path <- "https://drive.google.com/file/d/1bG0a0WRg-LEnASl6M3J0qyHJA_cMY1CQ/view?usp=sharing"
-src_offers <- read_csv_gdrive(src_offers_path)
-```
-
-```{r offers-glimpse}
-# List the columns and data types in the data frame
-glimpse(src_offers)
-```
-
-From the code outputs above, we can see that this data frame has `r nrow(src_offers)` rows and `r ncol(src_offers)` columns (a mix of character and numeric data types). The columns include some identifiers for time, geography and school, some descriptive dimensions for the number of preferences and type of school and some measures relating to the number of applications and offers made. Each row represents a single school for a single academic year.
-
-## Info
-This file contains additional information fields relating to primary and secondary schools in all local authorities. It excludes nurseries, special schools, children's centers, pupil referral units and post-16 education. Once again, we can connect to it through Google Drive.
 
 ```{r read-info}
 # Read in the source data for info
@@ -78,6 +62,22 @@ glimpse(src_info)
 ```
 
 This data frame has `r nrow(src_info)` rows and `r ncol(src_info)` columns. The columns are a mix of character, numeric and logical^[Columns which have been detected as logical, or boolean, always raise a small red flag for me. It can be an indicator that the column is empty of data (i.e. all values are `NA`). In this case, it looks like this is indeed what has happened, since running the `unique()` function over any of these columns always returns just a single value of `NA`. Therefore, I can safely exclude these columns from my analysis since they contain no useful data.] data types. The columns include some identifiers for time, geography and school, some descriptive dimensions about each school and some measures relating to the number of pupils of different types. Each row represents a single school and the data represents the latest available.
+
+## Offers
+This file contains data relating to the number of offers made to applicants for secondary and primary school places since 2014, and the proportion which received preferred offers. Data is aggregated at the school level. Further details including an explanation of the terminology used in this dataset can be found [here](https://drive.google.com/drive/u/1/folders/1bbnbd9d4HDn3yXIIhaRSigZV46KpCyKy). Once again, we can connect to it through Google Drive.
+
+```{r read-offers}
+# Read in the source data for offers
+src_offers_path <- "https://drive.google.com/file/d/1bG0a0WRg-LEnASl6M3J0qyHJA_cMY1CQ/view?usp=sharing"
+src_offers <- read_csv_gdrive(src_offers_path)
+```
+
+```{r offers-glimpse}
+# List the columns and data types in the data frame
+glimpse(src_offers)
+```
+
+From the code outputs above, we can see that this data frame has `r nrow(src_offers)` rows and `r ncol(src_offers)` columns (a mix of character and numeric data types). The columns include some identifiers for time, geography and school, some descriptive dimensions for the number of preferences and type of school and some measures relating to the number of applications and offers made. Each row represents a single school for a single academic year.
 
 ## Performance
 These files contain key stage 2 (KS2) performance data for primary schools and key stage 4 (KS4) performance data for secondary schools in England for academic years from 2014 onwards. Note that due to the COVID-19 pandemic, the UK Government cancelled all statutory national curriculum assessments due to be held in summer 2020 and 2021 at all Key Stages. Therefore, no data is available for the 2019/20 or 2020/21 academic years. Further details including an explanation of the terminology used in this dataset can be found [here](https://drive.google.com/drive/folders/1vai66CUaYhPI0RXQI-BlC5kufZZyf3JU?usp=sharing).
@@ -95,9 +95,41 @@ src_perf_1819ks4_path <- "https://drive.google.com/file/d/1uBhU0yeuV97d66PRR60pq
 src_perf_1819ks4 <- read_csv_gdrive(src_perf_1819ks4_path)
 ```
 
-These files contain a large number of columns. We will need to pick out only the most relevant for reporting, which can be standardised across all schools and all years.
+These files contain a large number of columns. We will need to pick out only the most relevant for reporting, which can be standardised across all schools.
 
 # Clean data
-## Offers
 ## Info
+Let's first review the column headings in this dataset. Recall, the data frame has `r ncol(src_info)` columns and `r nrow(src_info)` rows.
+
+```{r col-headers-info}
+# Print a list of the column headings in the info df
+src_info %>% 
+  summarise_all(n_distinct) %>% 
+  transpose(keep.names = "field") %>% 
+  rename(unique_values = V1)
+```
+
+One key piece of cleaning we need to do with this dataset is to provide a mechanism to group entities that describe the same establishment (i.e. where there has been a change in URN over time due to conversion to academy). We can do this using the `links` columns at the end of this data frame, along with the `urn`, to create a bridge table, which we'll call `brg_school`.
+
+```{r bridge-school-1}
+# Set up the bridge table
+brg_school <- src_info %>%
+  # select required columns
+  select(master_urn = urn,
+         status = establishment_status_name,
+         starts_with("link_")) %>% 
+  # pivot the links
+  pivot_longer(!c(master_urn, status),
+               values_drop_na = TRUE) %>% 
+  # drop the name column
+  select(-name) %>% 
+  # split the description column into useful data
+  mutate(linked_urn = as.numeric(str_extract(value,"\\d+")),
+         link_type = str_trim(str_extract(value,"\\D+"))) %>% 
+  # drop the value column
+  select(-value)
+```
+
+
+## Offers
 ## Performance

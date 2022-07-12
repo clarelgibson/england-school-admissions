@@ -7,12 +7,12 @@ Clare Gibson
     -   [Required packages](#required-packages)
     -   [Custom functions](#custom-functions)
 -   [Read data](#read-data)
-    -   [Offers](#offers)
     -   [Info](#info)
+    -   [Offers](#offers)
     -   [Performance](#performance)
 -   [Clean data](#clean-data)
-    -   [Offers](#offers-1)
     -   [Info](#info-1)
+    -   [Offers](#offers-1)
     -   [Performance](#performance-1)
 
 # Introduction
@@ -59,14 +59,14 @@ source("utils.R")
 
 # Read data
 
-## Offers
+## Info
 
-This file contains data relating to the number of offers made to
-applicants for secondary and primary school places since 2014, and the
-proportion which received preferred offers. Data is aggregated at the
-school level. Further details including an explanation of the
-terminology used in this dataset can be found
-[here](https://drive.google.com/drive/u/1/folders/1bbnbd9d4HDn3yXIIhaRSigZV46KpCyKy).
+This file contains descriptive fields relating to primary and secondary
+schools across all local authorities in England. It excludes nurseries,
+special schools, children’s centers, pupil referral units and post-16
+education. We can consider this largely to be the dimensional data for
+the dashboard, while the other datasets for Offers and Performance can
+be considered to be the measures.
 
 The source data is stored in a CSV file on [Google
 Drive](https://drive.google.com/drive/u/1/folders/1lFZhobbGoCKKEtaZ5CDiphTbOxcbvJzW).
@@ -76,69 +76,6 @@ usually assign it to a variable with the prefix `src_` to indicate that
 this is source data. Once I start to modify the data, I remove the
 prefix. That way, I always have a copy of the original source data in
 its unaltered form to refer back to.
-
-``` r
-# Read in the source data for offers
-src_offers_path <- "https://drive.google.com/file/d/1bG0a0WRg-LEnASl6M3J0qyHJA_cMY1CQ/view?usp=sharing"
-src_offers <- read_csv_gdrive(src_offers_path)
-```
-
-``` r
-# List the columns and data types in the data frame
-glimpse(src_offers)
-```
-
-    ## Rows: 171,385
-    ## Columns: 35
-    ## $ time_period                          <dbl> 202223, 202223, 202223, 202223, 2…
-    ## $ time_identifier                      <chr> "Academic year", "Academic year",…
-    ## $ geographic_level                     <chr> "School", "School", "School", "Sc…
-    ## $ country_code                         <chr> "E92000001", "E92000001", "E92000…
-    ## $ country_name                         <chr> "England", "England", "England", …
-    ## $ region_code                          <chr> "E13000001", "E13000001", "E13000…
-    ## $ region_name                          <chr> "Inner London", "Inner London", "…
-    ## $ old_la_code                          <dbl> 201, 202, 202, 202, 202, 202, 202…
-    ## $ new_la_code                          <chr> "E09000001", "E09000007", "E09000…
-    ## $ la_name                              <chr> "City of London", "Camden", "Camd…
-    ## $ school_phase                         <chr> "Primary", "Primary", "Primary", …
-    ## $ school_laestab_as_used               <dbl> 2013614, 2022000, 2022001, 202200…
-    ## $ number_preferences_la                <chr> "6", "6", "6", "6", "6", "6", "6"…
-    ## $ school_name                          <chr> "The Aldgate School", "St Luke's …
-    ## $ total_number_places_offered          <dbl> 30, 15, 30, 60, 43, 60, 37, 48, 3…
-    ## $ number_preferred_offers              <dbl> 30, 15, 30, 60, 38, 60, 35, 48, 3…
-    ## $ number_1st_preference_offers         <dbl> 30, 11, 23, 51, 34, 43, 28, 31, 2…
-    ## $ number_2nd_preference_offers         <dbl> 0, 3, 3, 6, 3, 10, 4, 9, 0, 5, 3,…
-    ## $ number_3rd_preference_offers         <dbl> 0, 1, 3, 3, 1, 2, 2, 2, 2, 1, 0, …
-    ## $ times_put_as_any_preferred_school    <dbl> 81, 94, 129, 163, 72, 150, 98, 12…
-    ## $ times_put_as_1st_preference          <dbl> 42, 21, 34, 56, 34, 44, 28, 31, 2…
-    ## $ times_put_as_2nd_preference          <dbl> 16, 26, 34, 41, 14, 37, 20, 27, 1…
-    ## $ times_put_as_3rd_preference          <dbl> 6, 24, 23, 25, 11, 23, 15, 13, 16…
-    ## $ proportion_1stprefs_v_1stprefoffers  <chr> "1.4", "1.909090909", "1.47826087…
-    ## $ proportion_1stprefs_v_totaloffers    <chr> "1.4", "1.4", "1.133333333", "0.9…
-    ## $ all_applications_from_another_la     <dbl> 62, 19, 8, 54, 5, 34, 46, 35, 0, …
-    ## $ offers_to_applicants_from_another_la <chr> "16", "3", "1", "20", "2", "11", …
-    ## $ establishment_type                   <chr> "Voluntary aided school", "Free s…
-    ## $ denomination                         <chr> "Faith", "Faith", "No religious c…
-    ## $ fsm_eligible_percent                 <chr> "13.7", "22.4", "12.8", "34.2", "…
-    ## $ admissions_policy                    <chr> "n/a", "n/a", "n/a", "n/a", "n/a"…
-    ## $ urban_rural                          <chr> "Urban major conurbation", "Urban…
-    ## $ allthrough_school                    <chr> "No", "No", "No", "No", "No", "No…
-    ## $ school_urn                           <chr> "100000", "136807", "139837", "14…
-    ## $ entry_year                           <chr> "R", "R", "R", "R", "R", "R", "R"…
-
-From the code outputs above, we can see that this data frame has 171385
-rows and 35 columns (a mix of character and numeric data types). The
-columns include some identifiers for time, geography and school, some
-descriptive dimensions for the number of preferences and type of school
-and some measures relating to the number of applications and offers
-made. Each row represents a single school for a single academic year.
-
-## Info
-
-This file contains additional information fields relating to primary and
-secondary schools in all local authorities. It excludes nurseries,
-special schools, children’s centers, pupil referral units and post-16
-education. Once again, we can connect to it through Google Drive.
 
 ``` r
 # Read in the source data for info
@@ -283,6 +220,72 @@ about each school and some measures relating to the number of pupils of
 different types. Each row represents a single school and the data
 represents the latest available.
 
+## Offers
+
+This file contains data relating to the number of offers made to
+applicants for secondary and primary school places since 2014, and the
+proportion which received preferred offers. Data is aggregated at the
+school level. Further details including an explanation of the
+terminology used in this dataset can be found
+[here](https://drive.google.com/drive/u/1/folders/1bbnbd9d4HDn3yXIIhaRSigZV46KpCyKy).
+Once again, we can connect to it through Google Drive.
+
+``` r
+# Read in the source data for offers
+src_offers_path <- "https://drive.google.com/file/d/1bG0a0WRg-LEnASl6M3J0qyHJA_cMY1CQ/view?usp=sharing"
+src_offers <- read_csv_gdrive(src_offers_path)
+```
+
+``` r
+# List the columns and data types in the data frame
+glimpse(src_offers)
+```
+
+    ## Rows: 171,385
+    ## Columns: 35
+    ## $ time_period                          <dbl> 202223, 202223, 202223, 202223, 2…
+    ## $ time_identifier                      <chr> "Academic year", "Academic year",…
+    ## $ geographic_level                     <chr> "School", "School", "School", "Sc…
+    ## $ country_code                         <chr> "E92000001", "E92000001", "E92000…
+    ## $ country_name                         <chr> "England", "England", "England", …
+    ## $ region_code                          <chr> "E13000001", "E13000001", "E13000…
+    ## $ region_name                          <chr> "Inner London", "Inner London", "…
+    ## $ old_la_code                          <dbl> 201, 202, 202, 202, 202, 202, 202…
+    ## $ new_la_code                          <chr> "E09000001", "E09000007", "E09000…
+    ## $ la_name                              <chr> "City of London", "Camden", "Camd…
+    ## $ school_phase                         <chr> "Primary", "Primary", "Primary", …
+    ## $ school_laestab_as_used               <dbl> 2013614, 2022000, 2022001, 202200…
+    ## $ number_preferences_la                <chr> "6", "6", "6", "6", "6", "6", "6"…
+    ## $ school_name                          <chr> "The Aldgate School", "St Luke's …
+    ## $ total_number_places_offered          <dbl> 30, 15, 30, 60, 43, 60, 37, 48, 3…
+    ## $ number_preferred_offers              <dbl> 30, 15, 30, 60, 38, 60, 35, 48, 3…
+    ## $ number_1st_preference_offers         <dbl> 30, 11, 23, 51, 34, 43, 28, 31, 2…
+    ## $ number_2nd_preference_offers         <dbl> 0, 3, 3, 6, 3, 10, 4, 9, 0, 5, 3,…
+    ## $ number_3rd_preference_offers         <dbl> 0, 1, 3, 3, 1, 2, 2, 2, 2, 1, 0, …
+    ## $ times_put_as_any_preferred_school    <dbl> 81, 94, 129, 163, 72, 150, 98, 12…
+    ## $ times_put_as_1st_preference          <dbl> 42, 21, 34, 56, 34, 44, 28, 31, 2…
+    ## $ times_put_as_2nd_preference          <dbl> 16, 26, 34, 41, 14, 37, 20, 27, 1…
+    ## $ times_put_as_3rd_preference          <dbl> 6, 24, 23, 25, 11, 23, 15, 13, 16…
+    ## $ proportion_1stprefs_v_1stprefoffers  <chr> "1.4", "1.909090909", "1.47826087…
+    ## $ proportion_1stprefs_v_totaloffers    <chr> "1.4", "1.4", "1.133333333", "0.9…
+    ## $ all_applications_from_another_la     <dbl> 62, 19, 8, 54, 5, 34, 46, 35, 0, …
+    ## $ offers_to_applicants_from_another_la <chr> "16", "3", "1", "20", "2", "11", …
+    ## $ establishment_type                   <chr> "Voluntary aided school", "Free s…
+    ## $ denomination                         <chr> "Faith", "Faith", "No religious c…
+    ## $ fsm_eligible_percent                 <chr> "13.7", "22.4", "12.8", "34.2", "…
+    ## $ admissions_policy                    <chr> "n/a", "n/a", "n/a", "n/a", "n/a"…
+    ## $ urban_rural                          <chr> "Urban major conurbation", "Urban…
+    ## $ allthrough_school                    <chr> "No", "No", "No", "No", "No", "No…
+    ## $ school_urn                           <chr> "100000", "136807", "139837", "14…
+    ## $ entry_year                           <chr> "R", "R", "R", "R", "R", "R", "R"…
+
+From the code outputs above, we can see that this data frame has 171385
+rows and 35 columns (a mix of character and numeric data types). The
+columns include some identifiers for time, geography and school, some
+descriptive dimensions for the number of preferences and type of school
+and some measures relating to the number of applications and offers
+made. Each row represents a single school for a single academic year.
+
 ## Performance
 
 These files contain key stage 2 (KS2) performance data for primary
@@ -317,13 +320,174 @@ src_perf_1819ks4 <- read_csv_gdrive(src_perf_1819ks4_path)
 
 These files contain a large number of columns. We will need to pick out
 only the most relevant for reporting, which can be standardised across
-all schools and all years.
+all schools.
 
 # Clean data
 
-## Offers
-
 ## Info
+
+Let’s first review the column headings in this dataset. Recall, the data
+frame has 122 columns and 36704 rows.
+
+``` r
+# Print a list of the column headings in the info df
+src_info %>% 
+  summarise_all(n_distinct) %>% 
+  transpose(keep.names = "field") %>% 
+  rename(unique_values = V1)
+```
+
+    ##                                field unique_values
+    ## 1                                urn         36704
+    ## 2                            la_code           156
+    ## 3                            la_name           156
+    ## 4               establishment_number          2787
+    ## 5                 establishment_name         29383
+    ## 6         type_of_establishment_name             9
+    ## 7      establishment_type_group_name             3
+    ## 8          establishment_status_name             4
+    ## 9   reason_establishment_opened_name            14
+    ## 10                         open_date           406
+    ## 11  reason_establishment_closed_name            12
+    ## 12                        close_date           514
+    ## 13           phase_of_education_name             5
+    ## 14                 statutory_low_age            18
+    ## 15                statutory_high_age            16
+    ## 16                     boarders_name             6
+    ## 17            nursery_provision_name             4
+    ## 18          official_sixth_form_name             4
+    ## 19                       gender_name             5
+    ## 20          religious_character_name            30
+    ## 21              religious_ethos_name            23
+    ## 22                      diocese_name            67
+    ## 23            admissions_policy_name             4
+    ## 24                   school_capacity          1770
+    ## 25              special_classes_name             4
+    ## 26                       census_date             6
+    ## 27                  number_of_pupils          1771
+    ## 28                    number_of_boys          1062
+    ## 29                   number_of_girls          1077
+    ## 30                    percentage_fsm           714
+    ## 31            trust_school_flag_name             5
+    ## 32                       trusts_name          2552
+    ## 33          school_sponsor_flag_name             3
+    ## 34              school_sponsors_name           919
+    ## 35              federation_flag_name             3
+    ## 36                  federations_name           423
+    ## 37                             ukprn         24916
+    ## 38                   fehe_identifier             1
+    ## 39       further_education_type_name             2
+    ## 40                  ofsted_last_insp          1825
+    ## 41                 last_changed_date           436
+    ## 42                            street         15463
+    ## 43                          locality          7197
+    ## 44                          address3          1076
+    ## 45                              town          1469
+    ## 46                       county_name            59
+    ## 47                          postcode         22330
+    ## 48                    school_website         19657
+    ## 49                     telephone_num         20054
+    ## 50                   head_title_name            22
+    ## 51                   head_first_name          2994
+    ## 52                    head_last_name         10448
+    ## 53          head_preferred_job_title           183
+    ## 54        bso_inspectorate_name_name             1
+    ## 55               inspectorate_report             1
+    ## 56     date_of_last_inspection_visit             1
+    ## 57             next_inspection_visit             1
+    ## 58                    teen_moth_name             2
+    ## 59                  teen_moth_places             1
+    ## 60                          ccf_name             4
+    ## 61                       senpru_name             4
+    ## 62                          ebd_name             3
+    ## 63                        places_pru             6
+    ## 64                      ft_prov_name             3
+    ## 65                  ed_by_other_name             4
+    ## 66            section41approved_name             1
+    ## 67                         sen1_name            14
+    ## 68                         sen2_name            13
+    ## 69                         sen3_name            12
+    ## 70                         sen4_name            11
+    ## 71                         sen5_name             9
+    ## 72                         sen6_name             9
+    ## 73                         sen7_name             8
+    ## 74                         sen8_name             7
+    ## 75                         sen9_name             6
+    ## 76                        sen10_name             5
+    ## 77                        sen11_name             4
+    ## 78                        sen12_name             3
+    ## 79                        sen13_name             2
+    ## 80  type_of_resourced_provision_name             5
+    ## 81       resourced_provision_on_roll            96
+    ## 82      resourced_provision_capacity            82
+    ## 83                  sen_unit_on_roll            75
+    ## 84                 sen_unit_capacity            66
+    ## 85                          gor_name             9
+    ## 86      district_administrative_name           322
+    ## 87          administrative_ward_name          6767
+    ## 88   parliamentary_constituency_name           535
+    ## 89                  urban_rural_name            11
+    ## 90                   gssla_code_name           157
+    ## 91                           easting         23274
+    ## 92                          northing         23549
+    ## 93                         msoa_name          6619
+    ## 94                         lsoa_name         16774
+    ## 95            inspectorate_name_name             4
+    ## 96                          sen_stat             1
+    ## 97                       sen_no_stat             1
+    ## 98                        props_name             1
+    ## 99                ofsted_rating_name             6
+    ## 100                  rsc_region_name             9
+    ## 101                     country_name             2
+    ## 102                             uprn         20840
+    ## 103                        site_name             1
+    ## 104                    qab_name_name             2
+    ## 105    establishment_accredited_name             2
+    ## 106                       qab_report             1
+    ## 107                        ch_number             1
+    ## 108                        msoa_code          6619
+    ## 109                        lsoa_code         16774
+    ## 110                              fsm           535
+    ## 111                           link_1         21736
+    ## 112                           link_2          2543
+    ## 113                           link_3           885
+    ## 114                           link_4            66
+    ## 115                           link_5            16
+    ## 116                           link_6             8
+    ## 117                           link_7             2
+    ## 118                           link_8             2
+    ## 119                           link_9             2
+    ## 120                          link_10             2
+    ## 121                          link_11             2
+    ## 122                          link_12             2
+
+One key piece of cleaning we need to do with this dataset is to provide
+a mechanism to group entities that describe the same establishment
+(i.e. where there has been a change in URN over time due to conversion
+to academy). We can do this using the `links` columns at the end of this
+data frame, along with the `urn`, to create a bridge table, which we’ll
+call `brg_school`.
+
+``` r
+# Set up the bridge table
+brg_school <- src_info %>%
+  # select required columns
+  select(master_urn = urn,
+         status = establishment_status_name,
+         starts_with("link_")) %>% 
+  # pivot the links
+  pivot_longer(!c(master_urn, status),
+               values_drop_na = TRUE) %>% 
+  # drop the name column
+  select(-name) %>% 
+  # split the description column into useful data
+  mutate(linked_urn = as.numeric(str_extract(value,"\\d+")),
+         link_type = str_trim(str_extract(value,"\\D+"))) %>% 
+  # drop the value column
+  select(-value)
+```
+
+## Offers
 
 ## Performance
 
