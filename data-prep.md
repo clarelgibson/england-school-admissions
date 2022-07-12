@@ -12,6 +12,8 @@ Clare Gibson
     -   [Performance](#performance)
 -   [Clean data](#clean-data)
     -   [Offers](#offers-1)
+    -   [Info](#info-1)
+    -   [Performance](#performance-1)
 
 # Introduction
 
@@ -294,44 +296,16 @@ terminology used in this dataset can be found
 [here](https://drive.google.com/drive/folders/1vai66CUaYhPI0RXQI-BlC5kufZZyf3JU?usp=sharing).
 
 The source data for performance is stored in several CSV files on the
-Google Drive. In this case we will need to read each file in separately,
-check if the column headings are the same, and then bind same columns
-from each source file into a single data frame.
+Google Drive. Having read through the guidance notes for these files, it
+seems that it is a difficult challenge to do a year-over-year comparison
+of performance, due to the changes that are frequently made to the way
+the tests are conducted and results reported. For the dashboard, I have
+decided to use only the performance figures from the most recent year.
+However, the data for previous years going back to 2014 is available in
+the Google Drive.
 
 ``` r
-# Read in all of the performance data files
-# 2014-15 KS2
-src_perf_1415ks2_path <- "https://drive.google.com/file/d/1P2vV0tpeMhXi0kKQdXwhEpZ13qnpoCf6/view?usp=sharing"
-src_perf_1415ks2 <- read_csv_gdrive(src_perf_1415ks2_path)
-
-# 2014-15 KS4
-src_perf_1415ks4_path <- "https://drive.google.com/file/d/1ki5OwoLYfb6s0kjxwWCQk-wGP4ZPp4qM/view?usp=sharing"
-src_perf_1415ks4 <- read_csv_gdrive(src_perf_1415ks4_path)
-
-# 2015-16 KS2
-src_perf_1516ks2_path <- "https://drive.google.com/file/d/1migtFWfMUr8HJDeujfw6h7p2nNDVsbp4/view?usp=sharing"
-src_perf_1516ks2 <- read_csv_gdrive(src_perf_1516ks2_path)
-
-# 2015-16 KS4
-src_perf_1516ks4_path <- "https://drive.google.com/file/d/1ijl88VsaaNdEC-N2O9hcRKc2sixcMyES/view?usp=sharing"
-src_perf_1516ks4 <- read_csv_gdrive(src_perf_1516ks4_path)
-
-# 2016-17 KS2
-src_perf_1617ks2_path <- "https://drive.google.com/file/d/1B1LpH8RXlBoH7C9mJPL4FribTvIUzekq/view?usp=sharing"
-src_perf_1617ks2 <- read_csv_gdrive(src_perf_1617ks2_path)
-
-# 2016-17 KS4
-src_perf_1617ks4_path <- "https://drive.google.com/file/d/1jOOmuKXDDp--cbESCz-j4Vp7ufVK3tPV/view?usp=sharing"
-src_perf_1617ks4 <- read_csv_gdrive(src_perf_1617ks4_path)
-
-# 2017-18 KS2
-src_perf_1718ks2_path <- "https://drive.google.com/file/d/1zJxcJrsOr7nvWwb6Yyg48QoMgSp76e8V/view?usp=sharing"
-src_perf_1718ks2 <- read_csv_gdrive(src_perf_1718ks2_path)
-
-# 2017-18 KS4
-src_perf_1718ks4_path <- "https://drive.google.com/file/d/1-5WDJ5dZulWmqQa8fX5eczA0Bo2m_jEc/view?usp=sharing"
-src_perf_1718ks4 <- read_csv_gdrive(src_perf_1718ks4_path)
-
+# Read in the most recent performance data files
 # 2018-19 KS2
 src_perf_1819ks2_path <- "https://drive.google.com/file/d/1CmXvDtDOmIlXXUzZ9SPW4Yoti-rTzi75/view?usp=sharing"
 src_perf_1819ks2 <- read_csv_gdrive(src_perf_1819ks2_path)
@@ -348,6 +322,10 @@ all schools and all years.
 # Clean data
 
 ## Offers
+
+## Info
+
+## Performance
 
 [^1]: Columns which have been detected as logical, or boolean, always
     raise a small red flag for me. It can be an indicator that the
