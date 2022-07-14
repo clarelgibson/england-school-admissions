@@ -50,7 +50,7 @@ This file contains descriptive fields relating to primary and secondary schools 
 
 The source data is stored in a CSV file on [Google Drive](https://drive.google.com/drive/u/1/folders/1lFZhobbGoCKKEtaZ5CDiphTbOxcbvJzW). We can read the CSV file directly from the source location using the custom function `read_csv_gdrive()`. When reading in source data, I usually assign it to a variable with the prefix `src_` to indicate that this is source data. Once I start to modify the data, I remove the prefix. That way, I always have a copy of the original source data in its unaltered form to refer back to.
 
-```{r read-info}
+```{r info-read}
 # Read in the source data for info
 src_info_path <- "https://drive.google.com/file/d/1kUqKvphHnh4M-NfP4gXLAr9MxdxoWgMT/view?usp=sharing"
 src_info <- read_csv_gdrive(src_info_path)
@@ -66,7 +66,7 @@ This data frame has `r nrow(src_info)` rows and `r ncol(src_info)` columns. The 
 ## Offers
 This file contains data relating to the number of offers made to applicants for secondary and primary school places since 2014, and the proportion which received preferred offers. Data is aggregated at the school level. Further details including an explanation of the terminology used in this dataset can be found [here](https://drive.google.com/drive/u/1/folders/1bbnbd9d4HDn3yXIIhaRSigZV46KpCyKy). Once again, we can connect to it through Google Drive.
 
-```{r read-offers}
+```{r offers-read}
 # Read in the source data for offers
 src_offers_path <- "https://drive.google.com/file/d/1bG0a0WRg-LEnASl6M3J0qyHJA_cMY1CQ/view?usp=sharing"
 src_offers <- read_csv_gdrive(src_offers_path)
@@ -84,7 +84,7 @@ These files contain key stage 2 (KS2) performance data for primary schools and k
 
 The source data for performance is stored in several CSV files on the Google Drive. Having read through the guidance notes for these files, it seems that it is a difficult challenge to do a year-over-year comparison of performance, due to the changes that are frequently made to the way the tests are conducted and results reported. For the dashboard, I have decided to use only the performance figures from the most recent year. However, the data for previous years going back to 2014 is available in the Google Drive.
 
-```{r read-performance}
+```{r performance-read}
 # Read in the most recent performance data files
 # 2018-19 KS2
 src_perf_1819ks2_path <- "https://drive.google.com/file/d/1CmXvDtDOmIlXXUzZ9SPW4Yoti-rTzi75/view?usp=sharing"
@@ -99,21 +99,11 @@ These files contain a large number of columns. We will need to pick out only the
 
 # Clean data
 ## Info
-Let's first review the column headings in this dataset. Recall, the data frame has `r ncol(src_info)` columns and `r nrow(src_info)` rows.
-
-```{r col-headers-info}
-# Print a list of the column headings in the info df
-src_info %>% 
-  summarise_all(n_distinct) %>% 
-  transpose(keep.names = "field") %>% 
-  rename(unique_values = V1)
-```
-
 One key piece of cleaning we need to do with this dataset is to provide a mechanism to group entities that describe the same establishment (i.e. where there has been a change in URN over time due to conversion to academy). We can do this using the `links` columns at the end of this data frame, along with the `urn`, to create a bridge table, which we'll call `brg_school`.
 
-```{r bridge-school-1}
+```{r bridge-school-unfiltered}
 # Set up the bridge table
-brg_school <- src_info %>%
+brg_school_unfiltered <- src_info %>%
   # select required columns
   select(master_urn = urn,
          status = establishment_status_name,
@@ -130,6 +120,237 @@ brg_school <- src_info %>%
   select(-value)
 ```
 
+At this point, we can stop and check what are the unique values of the `link_type` column?
+
+```{r bridge-link-types}
+# What are the unique values of link_type
+unique(brg_school_unfiltered$link_type)
+```
+
+The links I am interested in are the predecessor-successor links so that I can keep schools grouped over time. I want the successor school to be retained as the master school and all predecessors to be linked to the master. If a school has no links then we simply list the master and linked URNs as the same number. Therefore, I need to keep all of the open schools as the master list and any predecessors need to be linked to those master URNs.
+
+```{r bridge-school}
+# Filter the table
+brg_school <- brg_school_unfiltered %>% 
+  # add self-urn
+  mutate(self_urn = master_urn) %>% 
+  pivot_longer(cols = c(linked_urn, self_urn),
+               names_to = "urn_type",
+               values_to = "linked_urn",
+               values_drop_na = TRUE) %>% 
+  # keep only currently open schools
+  filter(grepl("^Open.*",
+               status,
+               ignore.case = TRUE)) %>% 
+  # select required columns
+  select(master_urn,
+         linked_urn)
+```
+
+Now that the bridge table is set up I can filter the `src_info` table to include only the currently open schools. The number of distinct URNs in this table should then match the number of distinct master URNs in `brg_school`.
+
+```{r info-filter}
+# Keep only the currently open schools in info
+info <- src_info %>% 
+  filter(grepl("^Open.*",
+               establishment_status_name))
+```
+
+```{r info-urn-count-check}
+# Check if the number of distinct URNs in info matches the number of
+# distinct master URNs in brg_school
+n_distinct(info$urn) == n_distinct(brg_school$master_urn)
+```
+
+The numbers match. Success!
+
+Next, let's keep only the columns we need from `src_info`.
+
+```{r info-select-cols}
+# Keep only the required columns from src_info
+info <- info %>% 
+  select(urn:establishment_status_name,
+         open_date,
+         close_date,
+         phase_of_education_name:statutory_high_age,
+         gender_name,
+         religious_character_name,
+         admissions_policy_name,
+         school_capacity,
+         number_of_pupils:percentage_fsm,
+         ofsted_last_insp:head_preferred_job_title,
+         gor_name:lsoa_name,
+         ofsted_rating_name,
+         msoa_code:fsm)
+```
+
+Let's now review the selected column headings in this dataset and the number of unique values in each column
+
+```{r info-unique-values}
+# Print a list of the column headings in the info df
+info %>% 
+  summarise_all(n_distinct) %>% 
+  transpose(keep.names = "field") %>% 
+  rename(unique_values = V1)
+```
+
+Some columns have relatively few unique values, making these columns clearly categorical. I'd like to review the values to ensure they are consistent and well labelled.
+
+```{r info-review-establishment-type}
+# Review the unique values in establishment type
+unique(info$type_of_establishment_name)
+```
+
+These values all look ok. [This page](https://www.leicester.gov.uk/schools-and-learning/school-and-colleges/school-admissions/understanding-the-different-types-of-school/) has some useful definitions of the different types of school.
+
+```{r info-review-establishment-group}
+# Review the unique values in establishment group
+unique(info$establishment_type_group_name)
+```
+
+All ok.
+
+```{r info-review-status}
+# Review the unique values in establishment status
+unique(info$establishment_status_name)
+```
+
+All ok.
+
+```{r info-review-phase}
+# Review the unique values in phase of education
+unique(info$phase_of_education_name)
+```
+
+All ok.
+
+```{r info-review-gender}
+# Review the unique values in gender
+unique(info$gender_name)
+```
+
+Some missing values here. Let's replace those with 'Not reported'.
+
+```{r info-recode-gender}
+# Convert missing values in gender
+info <- info %>% 
+  mutate(gender_name = replace_na(gender_name, "Not reported"))
+
+# Check the results
+unique(info$gender_name)
+```
+
+All ok.
+
+```{r info-review-religious-character}
+# Review the unique values in religious character
+unique(info$religious_character_name)
+```
+
+Again, let's fix the missing values.
+
+```{r info-recode-religious-character}
+# Convert missing values in religious character
+info <- info %>% 
+  mutate(
+    religious_character_name = replace_na(
+      religious_character_name, "Not reported"))
+
+# Check the results
+unique(info$religious_character_name)
+```
+
+All ok.
+
+```{r info-review-admissions-policy}
+# Review the unique values in admissions policy
+unique(info$admissions_policy_name)
+```
+
+Again let's fix the missing values.
+
+```{r info-recode-admissions-policy}
+# Convert missing values in admissions policy
+info <- info %>% 
+  mutate(
+    admissions_policy_name = replace_na(
+      admissions_policy_name, "Not reported"))
+
+# Check the results
+unique(info$admissions_policy_name)
+```
+
+All ok.
+
+```{r info-review-ofsted}
+# Review the unique values in ofsted rating
+unique(info$ofsted_rating_name)
+```
+
+Some recoding is necessary here. According to [Ofsted](https://www.gov.uk/government/publications/education-inspection-framework/education-inspection-framework), school inspections use a 4-point grading scale:
+
+* grade 1 - outstanding
+* grade 2 - good
+* grade 3 - requires improvement
+* grade 4 - inadequate
+
+In our dataset, I see some other values of `Serious Weaknesses` and `Special Measures`, which are not on the ratings list provided by Ofsted. In fact, both of these ratings are a [subset](https://www.gov.uk/government/publications/school-inspections-a-guide-for-parents/school-inspections-a-guide-for-parents) of the "inadequate" (grade 4) rating. Therefore, I can recode both of these values as `inadequate`. I can also add in the grade points to the ratings dimension table to provide a quantitative and aggregatable measure.
+
+```{r info-recode-ofsted}
+# Fix values for ofsted rating
+info <- info %>% 
+    mutate(ofsted_rating_name = case_when(
+      grepl("Weakness", ofsted_rating_name) ~ "Inadequate",
+      grepl("Measures", ofsted_rating_name) ~ "Inadequate",
+      is.na(ofsted_rating_name) ~ "Not reported",
+      TRUE ~ ofsted_rating_name
+    ),
+    ofsted_rating_score = case_when(
+    grepl("Outstanding", ofsted_rating_name) ~ 1,
+    grepl("Good", ofsted_rating_name) ~ 2,
+    grepl("improvement", ofsted_rating_name) ~ 3,
+    grepl("Inadequate", ofsted_rating_name) ~ 4
+  ))
+
+# Check results
+unique(info$ofsted_rating_name)
+unique(info$ofsted_rating_score)
+```
 
 ## Offers
+Let's keep only the columns we need from `src_offers`. Some of the columns are duplicates of columns already in the `info` table, and some are just not required.
+
+```{r offers-select-cols}
+# Select required columns from offers
+offers <- src_offers %>% 
+  select(time_period,
+         region_code,
+         region_name,
+         old_la_code,
+         school_laestab_as_used,
+         number_preferences_la,
+         total_number_places_offered:offers_to_applicants_from_another_la,
+         denomination,
+         school_urn,
+         entry_year)
+```
+
+Next we can filter out any records where the `school_urn` is `n/a`.
+
+```{r offers-filter}
+# Remove entries with null URN
+offers <- offers %>% 
+  filter(school_urn != "n/a")
+```
+
+Let's now review the selected column headings in this dataset and the number of unique values in each column
+
+```{r offers-unique-values}
+# Print a list of the column headings in the offers df
+offers %>% 
+  summarise_all(n_distinct) %>% 
+  transpose(keep.names = "field") %>% 
+  rename(unique_values = V1)
+```
+
 ## Performance

@@ -326,141 +326,6 @@ all schools.
 
 ## Info
 
-Let’s first review the column headings in this dataset. Recall, the data
-frame has 122 columns and 36704 rows.
-
-``` r
-# Print a list of the column headings in the info df
-src_info %>% 
-  summarise_all(n_distinct) %>% 
-  transpose(keep.names = "field") %>% 
-  rename(unique_values = V1)
-```
-
-    ##                                field unique_values
-    ## 1                                urn         36704
-    ## 2                            la_code           156
-    ## 3                            la_name           156
-    ## 4               establishment_number          2787
-    ## 5                 establishment_name         29383
-    ## 6         type_of_establishment_name             9
-    ## 7      establishment_type_group_name             3
-    ## 8          establishment_status_name             4
-    ## 9   reason_establishment_opened_name            14
-    ## 10                         open_date           406
-    ## 11  reason_establishment_closed_name            12
-    ## 12                        close_date           514
-    ## 13           phase_of_education_name             5
-    ## 14                 statutory_low_age            18
-    ## 15                statutory_high_age            16
-    ## 16                     boarders_name             6
-    ## 17            nursery_provision_name             4
-    ## 18          official_sixth_form_name             4
-    ## 19                       gender_name             5
-    ## 20          religious_character_name            30
-    ## 21              religious_ethos_name            23
-    ## 22                      diocese_name            67
-    ## 23            admissions_policy_name             4
-    ## 24                   school_capacity          1770
-    ## 25              special_classes_name             4
-    ## 26                       census_date             6
-    ## 27                  number_of_pupils          1771
-    ## 28                    number_of_boys          1062
-    ## 29                   number_of_girls          1077
-    ## 30                    percentage_fsm           714
-    ## 31            trust_school_flag_name             5
-    ## 32                       trusts_name          2552
-    ## 33          school_sponsor_flag_name             3
-    ## 34              school_sponsors_name           919
-    ## 35              federation_flag_name             3
-    ## 36                  federations_name           423
-    ## 37                             ukprn         24916
-    ## 38                   fehe_identifier             1
-    ## 39       further_education_type_name             2
-    ## 40                  ofsted_last_insp          1825
-    ## 41                 last_changed_date           436
-    ## 42                            street         15463
-    ## 43                          locality          7197
-    ## 44                          address3          1076
-    ## 45                              town          1469
-    ## 46                       county_name            59
-    ## 47                          postcode         22330
-    ## 48                    school_website         19657
-    ## 49                     telephone_num         20054
-    ## 50                   head_title_name            22
-    ## 51                   head_first_name          2994
-    ## 52                    head_last_name         10448
-    ## 53          head_preferred_job_title           183
-    ## 54        bso_inspectorate_name_name             1
-    ## 55               inspectorate_report             1
-    ## 56     date_of_last_inspection_visit             1
-    ## 57             next_inspection_visit             1
-    ## 58                    teen_moth_name             2
-    ## 59                  teen_moth_places             1
-    ## 60                          ccf_name             4
-    ## 61                       senpru_name             4
-    ## 62                          ebd_name             3
-    ## 63                        places_pru             6
-    ## 64                      ft_prov_name             3
-    ## 65                  ed_by_other_name             4
-    ## 66            section41approved_name             1
-    ## 67                         sen1_name            14
-    ## 68                         sen2_name            13
-    ## 69                         sen3_name            12
-    ## 70                         sen4_name            11
-    ## 71                         sen5_name             9
-    ## 72                         sen6_name             9
-    ## 73                         sen7_name             8
-    ## 74                         sen8_name             7
-    ## 75                         sen9_name             6
-    ## 76                        sen10_name             5
-    ## 77                        sen11_name             4
-    ## 78                        sen12_name             3
-    ## 79                        sen13_name             2
-    ## 80  type_of_resourced_provision_name             5
-    ## 81       resourced_provision_on_roll            96
-    ## 82      resourced_provision_capacity            82
-    ## 83                  sen_unit_on_roll            75
-    ## 84                 sen_unit_capacity            66
-    ## 85                          gor_name             9
-    ## 86      district_administrative_name           322
-    ## 87          administrative_ward_name          6767
-    ## 88   parliamentary_constituency_name           535
-    ## 89                  urban_rural_name            11
-    ## 90                   gssla_code_name           157
-    ## 91                           easting         23274
-    ## 92                          northing         23549
-    ## 93                         msoa_name          6619
-    ## 94                         lsoa_name         16774
-    ## 95            inspectorate_name_name             4
-    ## 96                          sen_stat             1
-    ## 97                       sen_no_stat             1
-    ## 98                        props_name             1
-    ## 99                ofsted_rating_name             6
-    ## 100                  rsc_region_name             9
-    ## 101                     country_name             2
-    ## 102                             uprn         20840
-    ## 103                        site_name             1
-    ## 104                    qab_name_name             2
-    ## 105    establishment_accredited_name             2
-    ## 106                       qab_report             1
-    ## 107                        ch_number             1
-    ## 108                        msoa_code          6619
-    ## 109                        lsoa_code         16774
-    ## 110                              fsm           535
-    ## 111                           link_1         21736
-    ## 112                           link_2          2543
-    ## 113                           link_3           885
-    ## 114                           link_4            66
-    ## 115                           link_5            16
-    ## 116                           link_6             8
-    ## 117                           link_7             2
-    ## 118                           link_8             2
-    ## 119                           link_9             2
-    ## 120                          link_10             2
-    ## 121                          link_11             2
-    ## 122                          link_12             2
-
 One key piece of cleaning we need to do with this dataset is to provide
 a mechanism to group entities that describe the same establishment
 (i.e. where there has been a change in URN over time due to conversion
@@ -470,7 +335,7 @@ call `brg_school`.
 
 ``` r
 # Set up the bridge table
-brg_school <- src_info %>%
+brg_school_unfiltered <- src_info %>%
   # select required columns
   select(master_urn = urn,
          status = establishment_status_name,
@@ -487,7 +352,453 @@ brg_school <- src_info %>%
   select(-value)
 ```
 
+At this point, we can stop and check what are the unique values of the
+`link_type` column?
+
+``` r
+# What are the unique values of link_type
+unique(brg_school_unfiltered$link_type)
+```
+
+    ##  [1] "Does not have links"                                           
+    ##  [2] "Successor - merged"                                            
+    ##  [3] "Successor"                                                     
+    ##  [4] "Predecessor - merged"                                          
+    ##  [5] "Predecessor"                                                   
+    ##  [6] "Sixth Form Centre Link"                                        
+    ##  [7] "Predecessor - amalgamated"                                     
+    ##  [8] "Successor - amalgamated"                                       
+    ##  [9] "Result of Amalgamation"                                        
+    ## [10] "Merged - expansion in school capacity and changer in age range"
+    ## [11] "Merged - change in age range"                                  
+    ## [12] "Other"                                                         
+    ## [13] "Successor - Split School"                                      
+    ## [14] "Merged - expansion of school capacity"                         
+    ## [15] "Predecessor - Split School"
+
+The links I am interested in are the predecessor-successor links so that
+I can keep schools grouped over time. I want the successor school to be
+retained as the master school and all predecessors to be linked to the
+master. If a school has no links then we simply list the master and
+linked URNs as the same number. Therefore, I need to keep all of the
+open schools as the master list and any predecessors need to be linked
+to those master URNs.
+
+``` r
+# Filter the table
+brg_school <- brg_school_unfiltered %>% 
+  # add self-urn
+  mutate(self_urn = master_urn) %>% 
+  pivot_longer(cols = c(linked_urn, self_urn),
+               names_to = "urn_type",
+               values_to = "linked_urn",
+               values_drop_na = TRUE) %>% 
+  # keep only currently open schools
+  filter(grepl("^Open.*",
+               status,
+               ignore.case = TRUE)) %>% 
+  # select required columns
+  select(master_urn,
+         linked_urn)
+```
+
+Now that the bridge table is set up I can filter the `src_info` table to
+include only the currently open schools. The number of distinct URNs in
+this table should then match the number of distinct master URNs in
+`brg_school`.
+
+``` r
+# Keep only the currently open schools in info
+info <- src_info %>% 
+  filter(grepl("^Open.*",
+               establishment_status_name))
+```
+
+``` r
+# Check if the number of distinct URNs in info matches the number of
+# distinct master URNs in brg_school
+n_distinct(info$urn) == n_distinct(brg_school$master_urn)
+```
+
+    ## [1] TRUE
+
+The numbers match. Success!
+
+Next, let’s keep only the columns we need from `src_info`.
+
+``` r
+# Keep only the required columns from src_info
+info <- info %>% 
+  select(urn:establishment_status_name,
+         open_date,
+         close_date,
+         phase_of_education_name:statutory_high_age,
+         gender_name,
+         religious_character_name,
+         admissions_policy_name,
+         school_capacity,
+         number_of_pupils:percentage_fsm,
+         ofsted_last_insp:head_preferred_job_title,
+         gor_name:lsoa_name,
+         ofsted_rating_name,
+         msoa_code:fsm)
+```
+
+Let’s now review the selected column headings in this dataset and the
+number of unique values in each column
+
+``` r
+# Print a list of the column headings in the info df
+info %>% 
+  summarise_all(n_distinct) %>% 
+  transpose(keep.names = "field") %>% 
+  rename(unique_values = V1)
+```
+
+    ##                              field unique_values
+    ## 1                              urn         20188
+    ## 2                          la_code           152
+    ## 3                          la_name           152
+    ## 4             establishment_number          2531
+    ## 5               establishment_name         18522
+    ## 6       type_of_establishment_name             9
+    ## 7    establishment_type_group_name             3
+    ## 8        establishment_status_name             2
+    ## 9                        open_date           311
+    ## 10                      close_date             8
+    ## 11         phase_of_education_name             5
+    ## 12               statutory_low_age            14
+    ## 13              statutory_high_age            13
+    ## 14                     gender_name             4
+    ## 15        religious_character_name            29
+    ## 16          admissions_policy_name             4
+    ## 17                 school_capacity          1488
+    ## 18                number_of_pupils          1735
+    ## 19                  number_of_boys          1050
+    ## 20                 number_of_girls          1065
+    ## 21                  percentage_fsm           708
+    ## 22                ofsted_last_insp          1487
+    ## 23               last_changed_date           294
+    ## 24                          street         13495
+    ## 25                        locality          6591
+    ## 26                        address3           991
+    ## 27                            town          1427
+    ## 28                     county_name            58
+    ## 29                        postcode         19440
+    ## 30                  school_website         19603
+    ## 31                   telephone_num         20035
+    ## 32                 head_title_name            19
+    ## 33                 head_first_name          2252
+    ## 34                  head_last_name          8079
+    ## 35        head_preferred_job_title           152
+    ## 36                        gor_name             9
+    ## 37    district_administrative_name           309
+    ## 38        administrative_ward_name          6249
+    ## 39 parliamentary_constituency_name           533
+    ## 40                urban_rural_name            10
+    ## 41                 gssla_code_name           153
+    ## 42                         easting         19149
+    ## 43                        northing         19321
+    ## 44                       msoa_name          6579
+    ## 45                       lsoa_name         15565
+    ## 46              ofsted_rating_name             6
+    ## 47                       msoa_code          6579
+    ## 48                       lsoa_code         15565
+    ## 49                             fsm           525
+
+Some columns have relatively few unique values, making these columns
+clearly categorical. I’d like to review the values to ensure they are
+consistent and well labelled.
+
+``` r
+# Review the unique values in establishment type
+unique(info$type_of_establishment_name)
+```
+
+    ## [1] "Voluntary aided school"       "Community school"            
+    ## [3] "Foundation school"            "Voluntary controlled school" 
+    ## [5] "Academy sponsor led"          "Academy converter"           
+    ## [7] "Free schools"                 "Studio schools"              
+    ## [9] "University technical college"
+
+These values all look ok. [This
+page](https://www.leicester.gov.uk/schools-and-learning/school-and-colleges/school-admissions/understanding-the-different-types-of-school/)
+has some useful definitions of the different types of school.
+
+``` r
+# Review the unique values in establishment group
+unique(info$establishment_type_group_name)
+```
+
+    ## [1] "Local authority maintained schools" "Academies"                         
+    ## [3] "Free Schools"
+
+All ok.
+
+``` r
+# Review the unique values in establishment status
+unique(info$establishment_status_name)
+```
+
+    ## [1] "Open"                        "Open, but proposed to close"
+
+All ok.
+
+``` r
+# Review the unique values in phase of education
+unique(info$phase_of_education_name)
+```
+
+    ## [1] "Primary"                 "Secondary"              
+    ## [3] "All-through"             "Middle deemed secondary"
+    ## [5] "Middle deemed primary"
+
+All ok.
+
+``` r
+# Review the unique values in gender
+unique(info$gender_name)
+```
+
+    ## [1] "Mixed" "Girls" "Boys"  NA
+
+Some missing values here. Let’s replace those with ‘Not reported’.
+
+``` r
+# Convert missing values in gender
+info <- info %>% 
+  mutate(gender_name = replace_na(gender_name, "Not reported"))
+
+# Check the results
+unique(info$gender_name)
+```
+
+    ## [1] "Mixed"        "Girls"        "Boys"         "Not reported"
+
+All ok.
+
+``` r
+# Review the unique values in religious character
+unique(info$religious_character_name)
+```
+
+    ##  [1] "Church of England"                                       
+    ##  [2] "Does not apply"                                          
+    ##  [3] "Roman Catholic"                                          
+    ##  [4] "Catholic"                                                
+    ##  [5] "None"                                                    
+    ##  [6] "Jewish"                                                  
+    ##  [7] "Muslim"                                                  
+    ##  [8] "Church of England/Christian"                             
+    ##  [9] "Church of England/Methodist"                             
+    ## [10] "Church of England/Free Church"                           
+    ## [11] "Methodist"                                               
+    ## [12] "Multi-faith"                                             
+    ## [13] "Church of England/Roman Catholic"                        
+    ## [14] "Christian/non-denominational"                            
+    ## [15] "Roman Catholic/Church of England"                        
+    ## [16] "Christian"                                               
+    ## [17] NA                                                        
+    ## [18] "United Reformed Church"                                  
+    ## [19] "Quaker"                                                  
+    ## [20] "Church of England/United Reformed Church"                
+    ## [21] "Sikh"                                                    
+    ## [22] "Seventh Day Adventist"                                   
+    ## [23] "Hindu"                                                   
+    ## [24] "Greek Orthodox"                                          
+    ## [25] "Orthodox Jewish"                                         
+    ## [26] "Anglican"                                                
+    ## [27] "Anglican/Church of England"                              
+    ## [28] "Methodist/Church of England"                             
+    ## [29] "Church of England/Methodist/United Reform Church/Baptist"
+
+Again, let’s fix the missing values.
+
+``` r
+# Convert missing values in religious character
+info <- info %>% 
+  mutate(
+    religious_character_name = replace_na(
+      religious_character_name, "Not reported"))
+
+# Check the results
+unique(info$religious_character_name)
+```
+
+    ##  [1] "Church of England"                                       
+    ##  [2] "Does not apply"                                          
+    ##  [3] "Roman Catholic"                                          
+    ##  [4] "Catholic"                                                
+    ##  [5] "None"                                                    
+    ##  [6] "Jewish"                                                  
+    ##  [7] "Muslim"                                                  
+    ##  [8] "Church of England/Christian"                             
+    ##  [9] "Church of England/Methodist"                             
+    ## [10] "Church of England/Free Church"                           
+    ## [11] "Methodist"                                               
+    ## [12] "Multi-faith"                                             
+    ## [13] "Church of England/Roman Catholic"                        
+    ## [14] "Christian/non-denominational"                            
+    ## [15] "Roman Catholic/Church of England"                        
+    ## [16] "Christian"                                               
+    ## [17] "Not reported"                                            
+    ## [18] "United Reformed Church"                                  
+    ## [19] "Quaker"                                                  
+    ## [20] "Church of England/United Reformed Church"                
+    ## [21] "Sikh"                                                    
+    ## [22] "Seventh Day Adventist"                                   
+    ## [23] "Hindu"                                                   
+    ## [24] "Greek Orthodox"                                          
+    ## [25] "Orthodox Jewish"                                         
+    ## [26] "Anglican"                                                
+    ## [27] "Anglican/Church of England"                              
+    ## [28] "Methodist/Church of England"                             
+    ## [29] "Church of England/Methodist/United Reform Church/Baptist"
+
+All ok.
+
+``` r
+# Review the unique values in admissions policy
+unique(info$admissions_policy_name)
+```
+
+    ## [1] "Not applicable" "Non-selective"  "Selective"      NA
+
+Again let’s fix the missing values.
+
+``` r
+# Convert missing values in admissions policy
+info <- info %>% 
+  mutate(
+    admissions_policy_name = replace_na(
+      admissions_policy_name, "Not reported"))
+
+# Check the results
+unique(info$admissions_policy_name)
+```
+
+    ## [1] "Not applicable" "Non-selective"  "Selective"      "Not reported"
+
+All ok.
+
+``` r
+# Review the unique values in ofsted rating
+unique(info$ofsted_rating_name)
+```
+
+    ## [1] "Outstanding"          "Good"                 "Requires improvement"
+    ## [4] "Special Measures"     "Serious Weaknesses"   NA
+
+Some recoding is necessary here. According to
+[Ofsted](https://www.gov.uk/government/publications/education-inspection-framework/education-inspection-framework),
+school inspections use a 4-point grading scale:
+
+-   grade 1 - outstanding
+-   grade 2 - good
+-   grade 3 - requires improvement
+-   grade 4 - inadequate
+
+In our dataset, I see some other values of `Serious Weaknesses` and
+`Special Measures`, which are not on the ratings list provided by
+Ofsted. In fact, both of these ratings are a
+[subset](https://www.gov.uk/government/publications/school-inspections-a-guide-for-parents/school-inspections-a-guide-for-parents)
+of the “inadequate” (grade 4) rating. Therefore, I can recode both of
+these values as `inadequate`. I can also add in the grade points to the
+ratings dimension table to provide a quantitative and aggregatable
+measure.
+
+``` r
+# Fix values for ofsted rating
+info <- info %>% 
+    mutate(ofsted_rating_name = case_when(
+      grepl("Weakness", ofsted_rating_name) ~ "Inadequate",
+      grepl("Measures", ofsted_rating_name) ~ "Inadequate",
+      is.na(ofsted_rating_name) ~ "Not reported",
+      TRUE ~ ofsted_rating_name
+    ),
+    ofsted_rating_score = case_when(
+    grepl("Outstanding", ofsted_rating_name) ~ 1,
+    grepl("Good", ofsted_rating_name) ~ 2,
+    grepl("improvement", ofsted_rating_name) ~ 3,
+    grepl("Inadequate", ofsted_rating_name) ~ 4
+  ))
+
+# Check results
+unique(info$ofsted_rating_name)
+```
+
+    ## [1] "Outstanding"          "Good"                 "Requires improvement"
+    ## [4] "Inadequate"           "Not reported"
+
+``` r
+unique(info$ofsted_rating_score)
+```
+
+    ## [1]  1  2  3  4 NA
+
 ## Offers
+
+Let’s keep only the columns we need from `src_offers`. Some of the
+columns are duplicates of columns already in the `info` table, and some
+are just not required.
+
+``` r
+# Select required columns from offers
+offers <- src_offers %>% 
+  select(time_period,
+         region_code,
+         region_name,
+         old_la_code,
+         school_laestab_as_used,
+         number_preferences_la,
+         total_number_places_offered:offers_to_applicants_from_another_la,
+         denomination,
+         school_urn,
+         entry_year)
+```
+
+Next we can filter out any records where the `school_urn` is `n/a`.
+
+``` r
+# Remove entries with null URN
+offers <- offers %>% 
+  filter(school_urn != "n/a")
+```
+
+Let’s now review the selected column headings in this dataset and the
+number of unique values in each column
+
+``` r
+# Print a list of the column headings in the offers df
+offers %>% 
+  summarise_all(n_distinct) %>% 
+  transpose(keep.names = "field") %>% 
+  rename(unique_values = V1)
+```
+
+    ##                                   field unique_values
+    ## 1                           time_period             9
+    ## 2                           region_code            10
+    ## 3                           region_name            10
+    ## 4                           old_la_code           155
+    ## 5                school_laestab_as_used         21371
+    ## 6                 number_preferences_la             5
+    ## 7           total_number_places_offered           425
+    ## 8               number_preferred_offers           425
+    ## 9          number_1st_preference_offers           403
+    ## 10         number_2nd_preference_offers           108
+    ## 11         number_3rd_preference_offers            61
+    ## 12    times_put_as_any_preferred_school          1599
+    ## 13          times_put_as_1st_preference           593
+    ## 14          times_put_as_2nd_preference           539
+    ## 15          times_put_as_3rd_preference           438
+    ## 16  proportion_1stprefs_v_1stprefoffers          9830
+    ## 17    proportion_1stprefs_v_totaloffers         15432
+    ## 18     all_applications_from_another_la           760
+    ## 19 offers_to_applicants_from_another_la           197
+    ## 20                         denomination             3
+    ## 21                           school_urn         24404
+    ## 22                           entry_year             3
 
 ## Performance
 
