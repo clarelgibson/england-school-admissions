@@ -14,6 +14,7 @@ Clare Gibson
     -   [Info](#info-1)
     -   [Offers](#offers-1)
     -   [Performance](#performance-1)
+-   [Model data](#model-data)
 
 # Introduction
 
@@ -566,8 +567,7 @@ Some missing values here. Let’s replace those with ‘Not reported’.
 
 ``` r
 # Convert missing values in gender
-info <- info %>% 
-  mutate(gender_name = replace_na(gender_name, "Not reported"))
+info$gender_name[is.na(info$gender_name)] <- "Not reported"
 
 # Check the results
 unique(info$gender_name)
@@ -616,10 +616,8 @@ Again, let’s fix the missing values.
 
 ``` r
 # Convert missing values in religious character
-info <- info %>% 
-  mutate(
-    religious_character_name = replace_na(
-      religious_character_name, "Not reported"))
+info$religious_character_name[is.na(info$religious_character_name)] <- 
+  "Not reported"
 
 # Check the results
 unique(info$religious_character_name)
@@ -668,10 +666,8 @@ Again let’s fix the missing values.
 
 ``` r
 # Convert missing values in admissions policy
-info <- info %>% 
-  mutate(
-    admissions_policy_name = replace_na(
-      admissions_policy_name, "Not reported"))
+info$admissions_policy_name[is.na(info$admissions_policy_name)] <- 
+  "Not reported"
 
 # Check the results
 unique(info$admissions_policy_name)
@@ -800,7 +796,178 @@ offers %>%
     ## 21                           school_urn         24404
     ## 22                           entry_year             3
 
+Let’s review the categorical values to ensure they are consistent and
+well labelled.
+
+``` r
+# Review the unique values in denomination
+unique(offers$denomination)
+```
+
+    ## [1] "Faith"                  "No religious character" "n/a"
+
+There are some values of `n/a` here. Let’s see what those are.
+
+``` r
+# Review the n/a values in denomination
+offers %>% 
+  filter(denomination == "n/a") %>% 
+  head()
+```
+
+    ## # A tibble: 6 × 22
+    ##   time_period region_code region_name   old_la_code school_laestab_as_used
+    ##         <dbl> <chr>       <chr>               <dbl>                  <dbl>
+    ## 1      202223 E12000009   South West            803                8032016
+    ## 2      202223 E12000004   East Midlands         830                8302064
+    ## 3      202223 E12000009   South West            865                8652044
+    ## 4      202223 E12000009   South West            865                8652054
+    ## 5      202223 E12000009   South West            866                8662022
+    ## 6      202223 E12000008   South East            867                8672002
+    ## # … with 17 more variables: number_preferences_la <chr>,
+    ## #   total_number_places_offered <dbl>, number_preferred_offers <dbl>,
+    ## #   number_1st_preference_offers <dbl>, number_2nd_preference_offers <dbl>,
+    ## #   number_3rd_preference_offers <dbl>,
+    ## #   times_put_as_any_preferred_school <dbl>, times_put_as_1st_preference <dbl>,
+    ## #   times_put_as_2nd_preference <dbl>, times_put_as_3rd_preference <dbl>,
+    ## #   proportion_1stprefs_v_1stprefoffers <chr>, …
+
+I guess this must be for schools who did not report their denomination.
+Let’s replace `n/a` with `Not reported`.
+
+``` r
+# Replace n/a
+offers$denomination[offers$denomination == "n/a"] <- "Not reported"
+
+# Check the results
+unique(offers$denomination)
+```
+
+    ## [1] "Faith"                  "No religious character" "Not reported"
+
+All ok.
+
+``` r
+# Review the unique values in entry year
+unique(offers$entry_year)
+```
+
+    ## [1] "R" "7" "9"
+
+All ok.
+
 ## Performance
+
+From this dataset we really need to select one or two good measures of
+performance for KS2 and KS4, along with the URN so that we can join back
+to school.
+
+-   For KS2 we’ll used the progress measures `readprog`, `writprog` and
+    `matprog`. [This
+    article](https://www.theschoolrun.com/understanding-primary-school-league-tables)
+    has a good explanation of the KS2 progress scores, and [this
+    article](https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/851788/KS2_progress_banding_calculations_bandings_2019.pdf)
+    explains how the bandings can be calculated.
+-   For KS4 we’ll use the progress 8 and attainment 8 measures `p8mea`
+    and `att8scr`. [This
+    article](https://www.goodschoolsguide.co.uk/curricula-and-exams/progress-8-attainment-8)
+    has a good explanation of these measures.
+
+We will further need to filter both the KS2 and KS4 data to include only
+rows that are aggregated at the mainstream school level (`RECTYPE = 1`).
+
+``` r
+# Clean the KS2 data
+perf_ks2 <- src_perf_1819ks2 %>% 
+  # Filter to rectype == 1
+  filter(rectype == 1) %>% 
+  # Select the required columns
+  select(urn,
+         readprog,
+         writprog,
+         matprog) %>% 
+  # Pivot data
+  pivot_longer(-urn,
+               names_to = "progress_measure",
+               values_to = "progress_value") %>% 
+  # Convert progress value to numeric
+  mutate(progress_value = as.numeric(progress_value))
+
+# View the head
+head(perf_ks2)
+```
+
+    ## # A tibble: 6 × 3
+    ##      urn progress_measure progress_value
+    ##    <dbl> <chr>                     <dbl>
+    ## 1 141279 readprog                    2.6
+    ## 2 141279 writprog                    2.3
+    ## 3 141279 matprog                     2  
+    ## 4 119910 readprog                    2.4
+    ## 5 119910 writprog                    3.8
+    ## 6 119910 matprog                    -1
+
+``` r
+# Clean the KS4 data
+perf_ks4 <- src_perf_1819ks4 %>% 
+  # Filter to rectype == 1
+  filter(rectype == 1) %>% 
+  # Select the required columns
+  select(urn,
+         p8mea,
+         att8scr) %>% 
+  # Pivot data
+  pivot_longer(-urn,
+               names_to = "progress_measure",
+               values_to = "progress_value") %>% 
+  # Convert progress value to numeric
+  mutate(progress_value = as.numeric(progress_value))
+
+# View the head
+head(perf_ks4)
+```
+
+    ## # A tibble: 6 × 3
+    ##      urn progress_measure progress_value
+    ##    <dbl> <chr>                     <dbl>
+    ## 1 100001 p8mea                     NA   
+    ## 2 100001 att8scr                   57.9 
+    ## 3 100003 p8mea                     NA   
+    ## 4 100003 att8scr                   20   
+    ## 5 100049 p8mea                     -0.11
+    ## 6 100049 att8scr                   42.4
+
+Now we can join the KS2 and KS4 data together and recode the progress
+measure names.
+
+``` r
+# Combine two data frames
+performance <- perf_ks2 %>% 
+  bind_rows(perf_ks4) %>% 
+  # Recode the progress measure names
+  mutate(progress_measure = case_when(
+    grepl("read.+", progress_measure) ~ "Reading progress score",
+    grepl("writ.+", progress_measure) ~ "Writing progress score",
+    grepl("mat.+", progress_measure) ~ "Maths progress score",
+    grepl("p8.+", progress_measure) ~ "Progress 8 score",
+    grepl("att8.+", progress_measure) ~ "Attainment 8 score"
+  ))
+
+# View the head
+head(performance)
+```
+
+    ## # A tibble: 6 × 3
+    ##      urn progress_measure       progress_value
+    ##    <dbl> <chr>                           <dbl>
+    ## 1 141279 Reading progress score            2.6
+    ## 2 141279 Writing progress score            2.3
+    ## 3 141279 Maths progress score              2  
+    ## 4 119910 Reading progress score            2.4
+    ## 5 119910 Writing progress score            3.8
+    ## 6 119910 Maths progress score             -1
+
+# Model data
 
 [^1]: Columns which have been detected as logical, or boolean, always
     raise a small red flag for me. It can be an indicator that the
