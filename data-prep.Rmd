@@ -452,3 +452,17 @@ head(performance)
 ```
 
 # Model data
+To build out the dimensional model for this data, we need to review all of the columns we intend to use, so that we can determine where they fit in the model. The custom function `describe_df()` contained in the `utils.R` file can help us with this.
+```{r describe-df}
+# Create a vector of dfs to describe
+data <- list("info" = info,
+             "offers" = offers,
+             "performance" = performance)
+
+# Run describe_df() over each df
+t_data <- lapply(data, describe_df)
+
+# Bind each df into a single df
+t_data <- bind_rows(t_data, .id = "source_table")
+```
+

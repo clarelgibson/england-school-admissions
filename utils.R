@@ -21,3 +21,26 @@ read_csv_gdrive <- function(link) {
     clean_names()
   return(df)
 }
+
+# DESCRIBE DF ##################################################################
+describe_df <- function(df) {
+  # This function takes a df as input and returns a new df
+  # containing the original df name, original df column names
+  # and an example of one of the values stored within each column
+  require(data.table)
+  
+  #df_name <- deparse(substitute(df))
+  t_df <- 
+    transpose(head(df, 1))
+  rownames(t_df) <- colnames(df)
+  t_df <- 
+    t_df %>% 
+    rownames_to_column() %>% 
+    #mutate(source_table = df_name) %>% 
+    rename(source_field = rowname,
+           source_value_example = V1) %>% 
+    select(#source_table,
+           source_field,
+           source_value_example)
+  return(t_df)
+}
