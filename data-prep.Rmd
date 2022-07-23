@@ -97,6 +97,38 @@ src_perf_1819ks4 <- read_csv_gdrive(src_perf_1819ks4_path)
 
 These files contain a large number of columns. We will need to pick out only the most relevant for reporting, which can be standardised across all schools.
 
+## Intake
+This dataset includes details about the year groups that schools are divided into in England. The data is aggregated by year group.
+
+```{r intake-read}
+# Read in the source data for intake
+src_intake_path <- "https://drive.google.com/file/d/1ASiYEbIbXg7VVNnkz3N1Cg1lHNqDxMiQ/view?usp=sharing"
+src_intake <- read_csv_gdrive(src_intake_path)
+```
+
+```{r intake-glimpse}
+# List the columns and data types in the data frame
+glimpse(src_intake)
+```
+
+This dataset has `r nrow(src_intake)` rows and `r ncol(src_intake)` columns and contains largely descriptive information about the academic year groups in England.
+
+## Calendar
+This dataset includes details about the academic years covered by the data.
+
+```{r calendar-read}
+# Read in the source data for calendar
+src_calendar_path <- "https://drive.google.com/file/d/1el2cL02nQidzN1pMcZ7AUb3h6wXuzN_E/view?usp=sharing"
+src_calendar <- read_csv_gdrive(src_calendar_path)
+```
+
+```{r calendar-glimpse}
+# List the columns and data types in the data frame
+glimpse(src_calendar)
+```
+
+This will be our date table. Since the lowest unit of time in the data is year, this is the level of detail of the calendar table. This table has `r nrow(src_calendar)` rows and `r ncol(src_calendar)` columns.
+
 # Clean data
 ## Info
 One key piece of cleaning we need to do with this dataset is to provide a mechanism to group entities that describe the same establishment (i.e. where there has been a change in URN over time due to conversion to academy). We can do this using the `links` columns at the end of this data frame, along with the `urn`, to create a bridge table, which we'll call `brg_school`.
@@ -323,6 +355,7 @@ offers <- src_offers %>%
          region_name,
          old_la_code,
          school_laestab_as_used,
+         la_name,
          number_preferences_la,
          total_number_places_offered:offers_to_applicants_from_another_la,
          denomination,
@@ -451,7 +484,26 @@ performance <- perf_ks2 %>%
 head(performance)
 ```
 
+## Intake
+No cleaning required. We can simply rename without the `src_` prefix.
+
+```{r intake-clean}
+# Rename the variable
+intake <- src_intake
+```
+
+## Calendar
+No cleaning required. We can simply rename without the `src_` prefix.
+
+```{r calendar-clean}
+# Rename the variable
+calendar <- src_calendar
+```
+
 # Model data
+The matrix below shows the fact and dimension tables that I intend to create for this model and the relationships between them.
+![bus-matrix-for-school-admissions-dashboard](images/bus-matrix.png)
+
 To build out the dimensional model for this data, we need to review all of the columns we intend to use, so that we can determine where they fit in the model. The custom function `describe_df()` contained in the `utils.R` file can help us with this.
 ```{r describe-df}
 # Create a vector of dfs to describe
@@ -464,5 +516,38 @@ t_data <- lapply(data, describe_df)
 
 # Bind each df into a single df
 t_data <- bind_rows(t_data, .id = "source_table")
+```
+
+After exporting the new `t_data` dataframe to a spreadsheet, I created a file named [star-schema](ref/star-schema.csv) which maps the raw source data to the corresponding dimension and fact tables for the star schema model.
+```{r read-star-schema-planning}
+# Read in star schema planning document
+star_schema_path <- "https://drive.google.com/file/d/1wyopZkDzEQzPVMUrZBoiMNMGSdWxyk0i/view?usp=sharing"
+star_schema <- read_csv_gdrive(star_schema_path)
+```
+
+## Dimensions
+### Local Authority
+
+The following columns are required for the local authority dimension table:
+```{r cols-dim-la}
+# Which columns are needed for the local authority dimension?
+star_schema %>% 
+  filter(model_table == "dim_la") %>% 
+  kable(caption = "Columns required for the local authority dimension")
+```
+
+These columns can all come from the `offers` data frame.
+
+```{r dim-la-build}
+# Build out the local authority dimension table
+dim_la <- offers %>% 
+  select(la_code = old_la_code,
+         la_name,
+         region_code,
+         region_name) %>% 
+  distinct()
+
+# Check the result
+head(dim_la)
 ```
 

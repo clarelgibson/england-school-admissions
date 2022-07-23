@@ -10,11 +10,17 @@ Clare Gibson
     -   [Info](#info)
     -   [Offers](#offers)
     -   [Performance](#performance)
+    -   [Intake](#intake)
+    -   [Calendar](#calendar)
 -   [Clean data](#clean-data)
     -   [Info](#info-1)
     -   [Offers](#offers-1)
     -   [Performance](#performance-1)
+    -   [Intake](#intake-1)
+    -   [Calendar](#calendar-1)
 -   [Model data](#model-data)
+    -   [Dimensions](#dimensions)
+        -   [Local Authority](#local-authority)
 
 # Introduction
 
@@ -322,6 +328,65 @@ src_perf_1819ks4 <- read_csv_gdrive(src_perf_1819ks4_path)
 These files contain a large number of columns. We will need to pick out
 only the most relevant for reporting, which can be standardised across
 all schools.
+
+## Intake
+
+This dataset includes details about the year groups that schools are
+divided into in England. The data is aggregated by year group.
+
+``` r
+# Read in the source data for intake
+src_intake_path <- "https://drive.google.com/file/d/1ASiYEbIbXg7VVNnkz3N1Cg1lHNqDxMiQ/view?usp=sharing"
+src_intake <- read_csv_gdrive(src_intake_path)
+```
+
+``` r
+# List the columns and data types in the data frame
+glimpse(src_intake)
+```
+
+    ## Rows: 14
+    ## Columns: 8
+    ## $ nc_key              <dbl> 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14
+    ## $ nc_year             <chr> "R", "1", "2", "3", "4", "5", "6", "7", "8", "9", …
+    ## $ nc_year_description <chr> "Reception", "Year 1", "Year 2", "Year 3", "Year 4…
+    ## $ education_phase     <chr> "Primary", "Primary", "Primary", "Primary", "Prima…
+    ## $ education_subphase  <chr> "Infant", "Infant", "Infant", "Junior", "Junior", …
+    ## $ key_stage           <chr> "EYFS", "KS1", "KS1", "KS2", "KS2", "KS2", "KS2", …
+    ## $ statutory_age_min   <dbl> 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17
+    ## $ statutory_age_max   <dbl> 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18
+
+This dataset has 14 rows and 8 columns and contains largely descriptive
+information about the academic year groups in England.
+
+## Calendar
+
+This dataset includes details about the academic years covered by the
+data.
+
+``` r
+# Read in the source data for calendar
+src_calendar_path <- "https://drive.google.com/file/d/1el2cL02nQidzN1pMcZ7AUb3h6wXuzN_E/view?usp=sharing"
+src_calendar <- read_csv_gdrive(src_calendar_path)
+```
+
+``` r
+# List the columns and data types in the data frame
+glimpse(src_calendar)
+```
+
+    ## Rows: 100
+    ## Columns: 6
+    ## $ year_key            <dbl> 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 20…
+    ## $ academic_year_start <dbl> 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 20…
+    ## $ academic_year_end   <dbl> 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 20…
+    ## $ academic_year_full  <chr> "2000-2001", "2001-2002", "2002-2003", "2003-2004"…
+    ## $ academic_year_short <chr> "00-01", "01-02", "02-03", "03-04", "04-05", "05-0…
+    ## $ covid_indicator     <chr> "Pre-Pandemic", "Pre-Pandemic", "Pre-Pandemic", "P…
+
+This will be our date table. Since the lowest unit of time in the data
+is year, this is the level of detail of the calendar table. This table
+has 100 rows and 6 columns.
 
 # Clean data
 
@@ -746,6 +811,7 @@ offers <- src_offers %>%
          region_name,
          old_la_code,
          school_laestab_as_used,
+         la_name,
          number_preferences_la,
          total_number_places_offered:offers_to_applicants_from_another_la,
          denomination,
@@ -778,23 +844,24 @@ offers %>%
     ## 3                           region_name            10
     ## 4                           old_la_code           155
     ## 5                school_laestab_as_used         21371
-    ## 6                 number_preferences_la             5
-    ## 7           total_number_places_offered           425
-    ## 8               number_preferred_offers           425
-    ## 9          number_1st_preference_offers           403
-    ## 10         number_2nd_preference_offers           108
-    ## 11         number_3rd_preference_offers            61
-    ## 12    times_put_as_any_preferred_school          1599
-    ## 13          times_put_as_1st_preference           593
-    ## 14          times_put_as_2nd_preference           539
-    ## 15          times_put_as_3rd_preference           438
-    ## 16  proportion_1stprefs_v_1stprefoffers          9830
-    ## 17    proportion_1stprefs_v_totaloffers         15432
-    ## 18     all_applications_from_another_la           760
-    ## 19 offers_to_applicants_from_another_la           197
-    ## 20                         denomination             3
-    ## 21                           school_urn         24404
-    ## 22                           entry_year             3
+    ## 6                               la_name           157
+    ## 7                 number_preferences_la             5
+    ## 8           total_number_places_offered           425
+    ## 9               number_preferred_offers           425
+    ## 10         number_1st_preference_offers           403
+    ## 11         number_2nd_preference_offers           108
+    ## 12         number_3rd_preference_offers            61
+    ## 13    times_put_as_any_preferred_school          1599
+    ## 14          times_put_as_1st_preference           593
+    ## 15          times_put_as_2nd_preference           539
+    ## 16          times_put_as_3rd_preference           438
+    ## 17  proportion_1stprefs_v_1stprefoffers          9830
+    ## 18    proportion_1stprefs_v_totaloffers         15432
+    ## 19     all_applications_from_another_la           760
+    ## 20 offers_to_applicants_from_another_la           197
+    ## 21                         denomination             3
+    ## 22                           school_urn         24404
+    ## 23                           entry_year             3
 
 Let’s review the categorical values to ensure they are consistent and
 well labelled.
@@ -815,15 +882,15 @@ offers %>%
   head()
 ```
 
-    ## # A tibble: 6 × 22
-    ##   time_period region_code region_name   old_la_code school_laestab_as_used
-    ##         <dbl> <chr>       <chr>               <dbl>                  <dbl>
-    ## 1      202223 E12000009   South West            803                8032016
-    ## 2      202223 E12000004   East Midlands         830                8302064
-    ## 3      202223 E12000009   South West            865                8652044
-    ## 4      202223 E12000009   South West            865                8652054
-    ## 5      202223 E12000009   South West            866                8662022
-    ## 6      202223 E12000008   South East            867                8672002
+    ## # A tibble: 6 × 23
+    ##   time_period region_code region_name   old_la_code school_laestab_as_u… la_name
+    ##         <dbl> <chr>       <chr>               <dbl>                <dbl> <chr>  
+    ## 1      202223 E12000009   South West            803              8032016 South …
+    ## 2      202223 E12000004   East Midlands         830              8302064 Derbys…
+    ## 3      202223 E12000009   South West            865              8652044 Wiltsh…
+    ## 4      202223 E12000009   South West            865              8652054 Wiltsh…
+    ## 5      202223 E12000009   South West            866              8662022 Swindon
+    ## 6      202223 E12000008   South East            867              8672002 Brackn…
     ## # … with 17 more variables: number_preferences_la <chr>,
     ## #   total_number_places_offered <dbl>, number_preferred_offers <dbl>,
     ## #   number_1st_preference_offers <dbl>, number_2nd_preference_offers <dbl>,
@@ -967,7 +1034,107 @@ head(performance)
     ## 5 119910 Writing progress score            3.8
     ## 6 119910 Maths progress score             -1
 
+## Intake
+
+No cleaning required. We can simply rename without the `src_` prefix.
+
+``` r
+# Rename the variable
+intake <- src_intake
+```
+
+## Calendar
+
+No cleaning required. We can simply rename without the `src_` prefix.
+
+``` r
+# Rename the variable
+calendar <- src_calendar
+```
+
 # Model data
+
+The matrix below shows the fact and dimension tables that I intend to
+create for this model and the relationships between them.
+![bus-matrix-for-school-admissions-dashboard](images/bus-matrix.png)
+
+To build out the dimensional model for this data, we need to review all
+of the columns we intend to use, so that we can determine where they fit
+in the model. The custom function `describe_df()` contained in the
+`utils.R` file can help us with this.
+
+``` r
+# Create a vector of dfs to describe
+data <- list("info" = info,
+             "offers" = offers,
+             "performance" = performance)
+
+# Run describe_df() over each df
+t_data <- lapply(data, describe_df)
+
+# Bind each df into a single df
+t_data <- bind_rows(t_data, .id = "source_table")
+```
+
+After exporting the new `t_data` dataframe to a spreadsheet, I created a
+file named [star-schema](ref/star-schema.csv) which maps the raw source
+data to the corresponding dimension and fact tables for the star schema
+model.
+
+``` r
+# Read in star schema planning document
+star_schema_path <- "https://drive.google.com/file/d/1wyopZkDzEQzPVMUrZBoiMNMGSdWxyk0i/view?usp=sharing"
+star_schema <- read_csv_gdrive(star_schema_path)
+```
+
+## Dimensions
+
+### Local Authority
+
+The following columns are required for the local authority dimension
+table:
+
+``` r
+# Which columns are needed for the local authority dimension?
+star_schema %>% 
+  filter(model_table == "dim_la") %>% 
+  kable(caption = "Columns required for the local authority dimension")
+```
+
+| source_table | source_field | source_value_example | model_table |
+|:-------------|:-------------|:---------------------|:------------|
+| info         | la_code      | 201                  | dim_la      |
+| info         | la_name      | City of London       | dim_la      |
+| offers       | region_code  | E13000001            | dim_la      |
+| offers       | region_name  | Inner London         | dim_la      |
+| offers       | old_la_code  | 201                  | dim_la      |
+
+Columns required for the local authority dimension
+
+These columns can all come from the `offers` data frame.
+
+``` r
+# Build out the local authority dimension table
+dim_la <- offers %>% 
+  select(la_code = old_la_code,
+         la_name,
+         region_code,
+         region_name) %>% 
+  distinct()
+
+# Check the result
+head(dim_la)
+```
+
+    ## # A tibble: 6 × 4
+    ##   la_code la_name                region_code region_name 
+    ##     <dbl> <chr>                  <chr>       <chr>       
+    ## 1     201 City of London         E13000001   Inner London
+    ## 2     202 Camden                 E13000001   Inner London
+    ## 3     203 Greenwich              E13000002   Outer London
+    ## 4     204 Hackney                E13000001   Inner London
+    ## 5     205 Hammersmith and Fulham E13000001   Inner London
+    ## 6     206 Islington              E13000001   Inner London
 
 [^1]: Columns which have been detected as logical, or boolean, always
     raise a small red flag for me. It can be an indicator that the
