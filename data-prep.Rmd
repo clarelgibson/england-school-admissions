@@ -529,7 +529,7 @@ star_schema <- read_csv_gdrive(star_schema_path)
 ### Local Authority
 
 The following columns are required for the local authority dimension table:
-```{r cols-dim-la}
+```{r dim-la-cols}
 # Which columns are needed for the local authority dimension?
 star_schema %>% 
   filter(model_table == "dim_la") %>% 
@@ -549,5 +549,68 @@ dim_la <- offers %>%
 
 # Check the result
 head(dim_la)
+```
+
+Note that `la_code` is not unique.
+
+```{r dim-la-la-code}
+# How many values of la_code are not unique?
+dim_la %>% 
+  count(la_code) %>% 
+  filter(n > 1)
+```
+
+Let's check if `la_name` is unique.
+
+```{r dim-la-la-name}
+# Is LA name unique?
+dim_la %>% 
+  count(la_name) %>% 
+  filter(n > 1)
+```
+
+This means that, over time, some codes have been recycled and used for different local authorities, and some local authorities have had changes in code. Let's assign a unique key to each record, and add a record for the `null` case, which we'll call `Not reported`.
+
+```{r dim-la-key}
+# Specify the null value
+dim_la_null <- tibble(la_key = 0,
+                      la_code = 0,
+                      la_name = "Not reported",
+                      region_code = "Not reported",
+                      region_name = "Not reported")
+
+# Assign a key and row for null values
+dim_la <- dim_la %>% 
+  rowid_to_column(var = "la_key") %>% 
+  bind_rows(dim_la_null) %>% 
+  arrange(la_key)
+```
+
+### School
+The following fields are required for the school dimension.
+
+```{r dim-school-cols}
+# Which columns are needed for the school dimension?
+star_schema %>% 
+  filter(model_table == "dim_school") %>% 
+  kable(caption = "Columns required for the school dimension")
+```
+
+These columns can all be found in the `info` table. We need to ensure that we include only the URNs in the `master_urn` column of our bridge table.
+
+```{r dim-school-build}
+# Build out the school dimension table
+dim_school <- brg_school %>% 
+  select(urn = master_urn) %>% 
+  left_join(select(info,
+                   urn,
+                   establishment_number,
+                   establishment_name,
+                   establishment_type = type_of_establishment_name,
+                   establishment_group = establishment_type_group_name,
+                   status = establishment_status_name,
+                   open_date,
+                   close_date,
+                   education_phase = phase_of_education_name))
 ```
 

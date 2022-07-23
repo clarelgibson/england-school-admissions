@@ -21,6 +21,7 @@ Clare Gibson
 -   [Model data](#model-data)
     -   [Dimensions](#dimensions)
         -   [Local Authority](#local-authority)
+        -   [School](#school)
 
 # Introduction
 
@@ -1135,6 +1136,142 @@ head(dim_la)
     ## 4     204 Hackney                E13000001   Inner London
     ## 5     205 Hammersmith and Fulham E13000001   Inner London
     ## 6     206 Islington              E13000001   Inner London
+
+Note that `la_code` is not unique.
+
+``` r
+# How many values of la_code are not unique?
+dim_la %>% 
+  count(la_code) %>% 
+  filter(n > 1)
+```
+
+    ## # A tibble: 5 × 2
+    ##   la_code     n
+    ##     <dbl> <int>
+    ## 1     203     2
+    ## 2     801     2
+    ## 3     810     2
+    ## 4     839     2
+    ## 5     928     2
+
+Let’s check if `la_name` is unique.
+
+``` r
+# Is LA name unique?
+dim_la %>% 
+  count(la_name) %>% 
+  filter(n > 1)
+```
+
+    ## # A tibble: 3 × 2
+    ##   la_name       n
+    ##   <chr>     <int>
+    ## 1 Dorset        2
+    ## 2 Norfolk       2
+    ## 3 Wokingham     2
+
+This means that, over time, some codes have been recycled and used for
+different local authorities, and some local authorities have had changes
+in code. Let’s assign a unique key to each record, and add a record for
+the `null` case, which we’ll call `Not reported`.
+
+``` r
+# Specify the null value
+dim_la_null <- tibble(la_key = 0,
+                      la_code = 0,
+                      la_name = "Not reported",
+                      region_code = "Not reported",
+                      region_name = "Not reported")
+
+# Assign a key and row for null values
+dim_la <- dim_la %>% 
+  rowid_to_column(var = "la_key") %>% 
+  bind_rows(dim_la_null) %>% 
+  arrange(la_key)
+```
+
+### School
+
+The following fields are required for the school dimension.
+
+``` r
+# Which columns are needed for the school dimension?
+star_schema %>% 
+  filter(model_table == "dim_school") %>% 
+  kable(caption = "Columns required for the school dimension")
+```
+
+| source_table | source_field                    | source_value_example                    | model_table |
+|:-------------|:--------------------------------|:----------------------------------------|:------------|
+| info         | urn                             | 100000                                  | dim_school  |
+| info         | establishment_number            | 3614                                    | dim_school  |
+| info         | establishment_name              | The Aldgate School                      | dim_school  |
+| info         | type_of_establishment_name      | Voluntary aided school                  | dim_school  |
+| info         | establishment_type_group_name   | Local authority maintained schools      | dim_school  |
+| info         | establishment_status_name       | Open                                    | dim_school  |
+| info         | open_date                       | NA                                      | dim_school  |
+| info         | close_date                      | NA                                      | dim_school  |
+| info         | phase_of_education_name         | Primary                                 | dim_school  |
+| info         | statutory_low_age               | 3                                       | dim_school  |
+| info         | statutory_high_age              | 11                                      | dim_school  |
+| info         | gender_name                     | Mixed                                   | dim_school  |
+| info         | religious_character_name        | Church of England                       | dim_school  |
+| info         | admissions_policy_name          | Not applicable                          | dim_school  |
+| info         | ofsted_last_insp                | 41383                                   | dim_school  |
+| info         | last_changed_date               | 44677                                   | dim_school  |
+| info         | street                          | St James’s Passage                      | dim_school  |
+| info         | locality                        | Duke’s Place                            | dim_school  |
+| info         | address3                        | NA                                      | dim_school  |
+| info         | town                            | London                                  | dim_school  |
+| info         | county_name                     | NA                                      | dim_school  |
+| info         | postcode                        | EC3A 5DE                                | dim_school  |
+| info         | school_website                  | www.thealdgateschool.org                | dim_school  |
+| info         | telephone_num                   | 2072831147                              | dim_school  |
+| info         | head_title_name                 | Miss                                    | dim_school  |
+| info         | head_first_name                 | Alexandra                               | dim_school  |
+| info         | head_last_name                  | Allan                                   | dim_school  |
+| info         | head_preferred_job_title        | Headteacher                             | dim_school  |
+| info         | gor_name                        | London                                  | dim_school  |
+| info         | district_administrative_name    | City of London                          | dim_school  |
+| info         | administrative_ward_name        | Portsoken                               | dim_school  |
+| info         | parliamentary_constituency_name | Cities of London and Westminster        | dim_school  |
+| info         | urban_rural_name                | (England/Wales) Urban major conurbation | dim_school  |
+| info         | gssla_code_name                 | E09000001                               | dim_school  |
+| info         | easting                         | 533498                                  | dim_school  |
+| info         | northing                        | 181201                                  | dim_school  |
+| info         | msoa_name                       | City of London 001                      | dim_school  |
+| info         | lsoa_name                       | City of London 001F                     | dim_school  |
+| info         | ofsted_rating_name              | Outstanding                             | dim_school  |
+| info         | msoa_code                       | E02000001                               | dim_school  |
+| info         | lsoa_code                       | E01032739                               | dim_school  |
+| info         | ofsted_rating_score             | 1                                       | dim_school  |
+| offers       | school_laestab_as_used          | 2013614                                 | dim_school  |
+| offers       | denomination                    | Faith                                   | dim_school  |
+| offers       | school_urn                      | 100000                                  | dim_school  |
+| performance  | urn                             | 141279                                  | dim_school  |
+
+Columns required for the school dimension
+
+These columns can all be found in the `info` table. We need to ensure
+that we include only the URNs in the `master_urn` column of our bridge
+table.
+
+``` r
+# Build out the school dimension table
+dim_school <- brg_school %>% 
+  select(urn = master_urn) %>% 
+  left_join(select(info,
+                   urn,
+                   establishment_number,
+                   establishment_name,
+                   establishment_type = type_of_establishment_name,
+                   establishment_group = establishment_type_group_name,
+                   status = establishment_status_name,
+                   open_date,
+                   close_date,
+                   education_phase = phase_of_education_name))
+```
 
 [^1]: Columns which have been detected as logical, or boolean, always
     raise a small red flag for me. It can be an indicator that the
