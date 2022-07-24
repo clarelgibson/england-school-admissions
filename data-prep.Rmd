@@ -23,7 +23,7 @@ opts_chunk$set(
 # Introduction
 This notebook serves as the documented code to read and prepare data for the England School Admissions Dashboard project ([github](https://github.com/clarelgibson/england-school-admissions) | [tableau](https://public.tableau.com/views/Schools_16505251102060/Home?:language=en-GB&:display_count=n&:origin=viz_share_link)).
 
-I will begin by reading in the source data required for the dashboards. I will then explain my intended approach to convert the source data into a "star-schema" [dimensional model](https://en.wikipedia.org/wiki/Dimensional_modeling), using conformed dimensions to serve multiple fact tables. Finally I will work through the data wrangling steps necessary to prepare the dimensional model.
+The notebook begins by reading in the source data required for the dashboards. It then works through the data wrangling steps necessary to clean and prepare the data for transfer to Tableau.
 
 ## Source data
 The full list of data sources, download links and retrieval steps can be found in the [project wiki](https://github.com/clarelgibson/england-school-admissions/wiki/Source-data).
@@ -82,10 +82,34 @@ From the code outputs above, we can see that this data frame has `r nrow(src_off
 ## Performance
 These files contain key stage 2 (KS2) performance data for primary schools and key stage 4 (KS4) performance data for secondary schools in England for academic years from 2014 onwards. Note that due to the COVID-19 pandemic, the UK Government cancelled all statutory national curriculum assessments due to be held in summer 2020 and 2021 at all Key Stages. Therefore, no data is available for the 2019/20 or 2020/21 academic years. Further details including an explanation of the terminology used in this dataset can be found [here](https://drive.google.com/drive/folders/1vai66CUaYhPI0RXQI-BlC5kufZZyf3JU?usp=sharing).
 
-The source data for performance is stored in several CSV files on the Google Drive. Having read through the guidance notes for these files, it seems that it is a difficult challenge to do a year-over-year comparison of performance, due to the changes that are frequently made to the way the tests are conducted and results reported. For the dashboard, I have decided to use only the performance figures from the most recent year. However, the data for previous years going back to 2014 is available in the Google Drive.
+The source data for performance is stored in several CSV files on the Google Drive. Having read through the guidance notes for these files, for the measures I want to compare, I can find these in all years from 2015/16 onwards.
 
-```{r performance-read}
-# Read in the most recent performance data files
+```{r performance-read, message=FALSE}
+# Read in the performance data files from 2015/16 onwards
+# 2015-16 KS2
+src_perf_1516ks2_path <- "https://drive.google.com/file/d/1migtFWfMUr8HJDeujfw6h7p2nNDVsbp4/view?usp=sharing"
+src_perf_1516ks2 <- read_csv_gdrive(src_perf_1516ks2_path)
+
+# 2015-16 KS4
+src_perf_1516ks4_path <- "https://drive.google.com/file/d/1ijl88VsaaNdEC-N2O9hcRKc2sixcMyES/view?usp=sharing"
+src_perf_1516ks4 <- read_csv_gdrive(src_perf_1516ks4_path)
+
+# 2016-17 KS2
+src_perf_1617ks2_path <- "https://drive.google.com/file/d/1B1LpH8RXlBoH7C9mJPL4FribTvIUzekq/view?usp=sharing"
+src_perf_1617ks2 <- read_csv_gdrive(src_perf_1617ks2_path)
+
+# 2016-17 KS4
+src_perf_1617ks4_path <- "https://drive.google.com/file/d/1jOOmuKXDDp--cbESCz-j4Vp7ufVK3tPV/view?usp=sharing"
+src_perf_1617ks4 <- read_csv_gdrive(src_perf_1617ks4_path)
+
+# 2017-18 KS2
+src_perf_1718ks2_path <- "https://drive.google.com/file/d/1zJxcJrsOr7nvWwb6Yyg48QoMgSp76e8V/view?usp=sharing"
+src_perf_1718ks2 <- read_csv_gdrive(src_perf_1718ks2_path)
+
+# 2017-18 KS4
+src_perf_1718ks4_path <- "https://drive.google.com/file/d/1-5WDJ5dZulWmqQa8fX5eczA0Bo2m_jEc/view?usp=sharing"
+src_perf_1718ks4 <- read_csv_gdrive(src_perf_1718ks4_path)
+
 # 2018-19 KS2
 src_perf_1819ks2_path <- "https://drive.google.com/file/d/1CmXvDtDOmIlXXUzZ9SPW4Yoti-rTzi75/view?usp=sharing"
 src_perf_1819ks2 <- read_csv_gdrive(src_perf_1819ks2_path)
@@ -426,40 +450,47 @@ We will further need to filter both the KS2 and KS4 data to include only rows th
 
 ```{r perf-ks2-clean}
 # Clean the KS2 data
-perf_ks2 <- src_perf_1819ks2 %>% 
+# Bind rows from all years
+perf_ks2 <- bind_rows(
+  "2015" = src_perf_1516ks2,
+  "2016" = src_perf_1617ks2,
+  "2017" = src_perf_1718ks2,
+  "2018" = src_perf_1819ks2,
+  .id = "year"
+) %>% 
   # Filter to rectype == 1
   filter(rectype == 1) %>% 
   # Select the required columns
-  select(urn,
+  select(year,
+         urn,
          readprog,
          writprog,
          matprog) %>% 
-  # Pivot data
-  pivot_longer(-urn,
-               names_to = "progress_measure",
-               values_to = "progress_value") %>% 
-  # Convert progress value to numeric
-  mutate(progress_value = as.numeric(progress_value))
+  # convert to numeric (any strings can be converted to NA)
+  mutate(across(everything(), as.numeric))
 
 # View the head
 head(perf_ks2)
 ```
 
 ```{r perf-ks4-clean}
-# Clean the KS4 data
-perf_ks4 <- src_perf_1819ks4 %>% 
+# Bind rows from all years
+perf_ks4 <- bind_rows(
+  "2015" = select(src_perf_1516ks4, rectype, urn, p8mea, att8scr),
+  "2016" = select(src_perf_1617ks4, rectype, urn, p8mea, att8scr),
+  "2017" = select(src_perf_1718ks4, rectype, urn, p8mea, att8scr),
+  "2018" = select(src_perf_1819ks4, rectype, urn, p8mea, att8scr),
+  .id = "year"
+) %>% 
   # Filter to rectype == 1
   filter(rectype == 1) %>% 
   # Select the required columns
-  select(urn,
+  select(year,
+         urn,
          p8mea,
          att8scr) %>% 
-  # Pivot data
-  pivot_longer(-urn,
-               names_to = "progress_measure",
-               values_to = "progress_value") %>% 
-  # Convert progress value to numeric
-  mutate(progress_value = as.numeric(progress_value))
+  # convert to numeric (any strings can be converted to NA)
+  mutate(across(everything(), as.numeric))
 
 # View the head
 head(perf_ks4)
@@ -470,15 +501,7 @@ Now we can join the KS2 and KS4 data together and recode the progress measure na
 ```{r performance-combined}
 # Combine two data frames
 performance <- perf_ks2 %>% 
-  bind_rows(perf_ks4) %>% 
-  # Recode the progress measure names
-  mutate(progress_measure = case_when(
-    grepl("read.+", progress_measure) ~ "Reading progress score",
-    grepl("writ.+", progress_measure) ~ "Writing progress score",
-    grepl("mat.+", progress_measure) ~ "Maths progress score",
-    grepl("p8.+", progress_measure) ~ "Progress 8 score",
-    grepl("att8.+", progress_measure) ~ "Attainment 8 score"
-  ))
+  full_join(perf_ks4)
 
 # View the head
 head(performance)
