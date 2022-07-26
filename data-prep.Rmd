@@ -21,31 +21,39 @@ opts_chunk$set(
 ```
 
 # Introduction
-This notebook serves as the documented code to read and prepare data for the England School Admissions Dashboard project ([github](https://github.com/clarelgibson/england-school-admissions) | [tableau](https://public.tableau.com/views/Schools_16505251102060/Home?:language=en-GB&:display_count=n&:origin=viz_share_link)).
+
+This notebook serves as the documented code to read and prepare data for the England School Admissions Dashboard project ([github](https://github.com/clarelgibson/england-school-admissions) \| [tableau](https://public.tableau.com/views/Schools_16505251102060/Home?:language=en-GB&:display_count=n&:origin=viz_share_link)).
 
 The notebook begins by reading in the source data required for the dashboards. It then works through the data wrangling steps necessary to clean and prepare the data for transfer to Tableau.
 
 ## Source data
+
 The full list of data sources, download links and retrieval steps can be found in the [project wiki](https://github.com/clarelgibson/england-school-admissions/wiki/Source-data).
 
 ## Required packages
+
 ```{r packages}
 # Packages
 library(tidyverse)      # for general wrangling
 library(data.table)     # for transposing data frames
 library(janitor)        # for cleaning column headers
 library(lubridate)      # for working with dates
+library(googlesheets4)  # for reading in Google Sheets files
 ```
 
 ## Custom functions
+
 I have created several custom functions to assist with data prep. Load these functions by sourcing the `utils.R` script in the working directory.
+
 ```{r custom-functions}
 # Custom functions
 source("utils.R")
 ```
 
 # Read data
+
 ## Info
+
 This file contains descriptive fields relating to primary and secondary schools across all local authorities in England. It excludes nurseries, special schools, children's centers, pupil referral units and post-16 education. We can consider this largely to be the dimensional data for the dashboard, while the other datasets for Offers and Performance can be considered to be the measures.
 
 The source data is stored in a CSV file on [Google Drive](https://drive.google.com/drive/u/1/folders/1lFZhobbGoCKKEtaZ5CDiphTbOxcbvJzW). We can read the CSV file directly from the source location using the custom function `read_csv_gdrive()`. When reading in source data, I usually assign it to a variable with the prefix `src_` to indicate that this is source data. Once I start to modify the data, I remove the prefix. That way, I always have a copy of the original source data in its unaltered form to refer back to.
@@ -61,9 +69,12 @@ src_info <- read_csv_gdrive(src_info_path)
 glimpse(src_info)
 ```
 
-This data frame has `r nrow(src_info)` rows and `r ncol(src_info)` columns. The columns are a mix of character, numeric and logical^[Columns which have been detected as logical, or boolean, always raise a small red flag for me. It can be an indicator that the column is empty of data (i.e. all values are `NA`). In this case, it looks like this is indeed what has happened, since running the `unique()` function over any of these columns always returns just a single value of `NA`. Therefore, I can safely exclude these columns from my analysis since they contain no useful data.] data types. The columns include some identifiers for time, geography and school, some descriptive dimensions about each school and some measures relating to the number of pupils of different types. Each row represents a single school and the data represents the latest available.
+This data frame has `r nrow(src_info)` rows and `r ncol(src_info)` columns. The columns are a mix of character, numeric and logical[^1] data types. The columns include some identifiers for time, geography and school, some descriptive dimensions about each school and some measures relating to the number of pupils of different types. Each row represents a single school and the data represents the latest available.
+
+[^1]: Columns which have been detected as logical, or boolean, always raise a small red flag for me. It can be an indicator that the column is empty of data (i.e. all values are `NA`). In this case, it looks like this is indeed what has happened, since running the `unique()` function over any of these columns always returns just a single value of `NA`. Therefore, I can safely exclude these columns from my analysis since they contain no useful data.
 
 ## Offers
+
 This file contains data relating to the number of offers made to applicants for secondary and primary school places since 2014, and the proportion which received preferred offers. Data is aggregated at the school level. Further details including an explanation of the terminology used in this dataset can be found [here](https://drive.google.com/drive/u/1/folders/1bbnbd9d4HDn3yXIIhaRSigZV46KpCyKy). Once again, we can connect to it through Google Drive.
 
 ```{r offers-read}
@@ -80,6 +91,7 @@ glimpse(src_offers)
 From the code outputs above, we can see that this data frame has `r nrow(src_offers)` rows and `r ncol(src_offers)` columns (a mix of character and numeric data types). The columns include some identifiers for time, geography and school, some descriptive dimensions for the number of preferences and type of school and some measures relating to the number of applications and offers made. Each row represents a single school for a single academic year.
 
 ## Performance
+
 These files contain key stage 2 (KS2) performance data for primary schools and key stage 4 (KS4) performance data for secondary schools in England for academic years from 2014 onwards. Note that due to the COVID-19 pandemic, the UK Government cancelled all statutory national curriculum assessments due to be held in summer 2020 and 2021 at all Key Stages. Therefore, no data is available for the 2019/20 or 2020/21 academic years. Further details including an explanation of the terminology used in this dataset can be found [here](https://drive.google.com/drive/folders/1vai66CUaYhPI0RXQI-BlC5kufZZyf3JU?usp=sharing).
 
 The source data for performance is stored in several CSV files on the Google Drive. Having read through the guidance notes for these files, for the measures I want to compare, I can find these in all years from 2015/16 onwards.
@@ -122,6 +134,7 @@ src_perf_1819ks4 <- read_csv_gdrive(src_perf_1819ks4_path)
 These files contain a large number of columns. We will need to pick out only the most relevant for reporting, which can be standardised across all schools.
 
 ## Intake
+
 This dataset includes details about the year groups that schools are divided into in England. The data is aggregated by year group.
 
 ```{r intake-read}
@@ -138,6 +151,7 @@ glimpse(src_intake)
 This dataset has `r nrow(src_intake)` rows and `r ncol(src_intake)` columns and contains largely descriptive information about the academic year groups in England.
 
 ## Calendar
+
 This dataset includes details about the academic years covered by the data.
 
 ```{r calendar-read}
@@ -154,7 +168,9 @@ glimpse(src_calendar)
 This will be our date table. Since the lowest unit of time in the data is year, this is the level of detail of the calendar table. This table has `r nrow(src_calendar)` rows and `r ncol(src_calendar)` columns.
 
 # Clean data
+
 ## Info
+
 One key piece of cleaning we need to do with this dataset is to provide a mechanism to group entities that describe the same establishment (i.e. where there has been a change in URN over time due to conversion to academy). We can do this using the `links` columns at the end of this data frame, along with the `urn`, to create a bridge table, which we'll call `brg_school`.
 
 ```{r bridge-school-unfiltered}
@@ -340,10 +356,10 @@ unique(info$ofsted_rating_name)
 
 Some recoding is necessary here. According to [Ofsted](https://www.gov.uk/government/publications/education-inspection-framework/education-inspection-framework), school inspections use a 4-point grading scale:
 
-* grade 1 - outstanding
-* grade 2 - good
-* grade 3 - requires improvement
-* grade 4 - inadequate
+-   grade 1 - outstanding
+-   grade 2 - good
+-   grade 3 - requires improvement
+-   grade 4 - inadequate
 
 In our dataset, I see some other values of `Serious Weaknesses` and `Special Measures`, which are not on the ratings list provided by Ofsted. In fact, both of these ratings are a [subset](https://www.gov.uk/government/publications/school-inspections-a-guide-for-parents/school-inspections-a-guide-for-parents) of the "inadequate" (grade 4) rating. Therefore, I can recode both of these values as `inadequate`. I can also add in the grade points to the ratings dimension table to provide a quantitative and aggregatable measure.
 
@@ -368,7 +384,33 @@ unique(info$ofsted_rating_name)
 unique(info$ofsted_rating_score)
 ```
 
+Finally, let's rename the columns in `info` to suit this analysis better.
+
+```{r info-rename}
+# Rename columns in info
+info <- info %>% 
+  rename(establishment_type = type_of_establishment_name,
+         establishment_status = establishment_status_name,
+         education_phase = phase_of_education_name,
+         gender = gender_name,
+         religious_character = religious_character_name,
+         admissions_policy = admissions_policy_name,
+         county = county_name,
+         head_title = head_title_name,
+         gor = gor_name,
+         administrative_district = district_administrative_name,
+         administrative_ward = administrative_ward_name,
+         parliamentary_constituency = parliamentary_constituency_name,
+         urban_rural_indicator = urban_rural_name,
+         gssla_code = gssla_code_name,
+         msoa = msoa_name,
+         lsoa = lsoa_name,
+         ofsted_rating = ofsted_rating_name,
+         number_of_fsm = fsm)
+```
+
 ## Offers
+
 Let's keep only the columns we need from `src_offers`. Some of the columns are duplicates of columns already in the `info` table, and some are just not required.
 
 ```{r offers-select-cols}
@@ -387,12 +429,13 @@ offers <- src_offers %>%
          entry_year)
 ```
 
-Next we can filter out any records where the `school_urn` is `n/a`.
+Next we can filter out any records where the `school_urn` is `n/a` and convert the remaining values to numeric.
 
 ```{r offers-filter}
 # Remove entries with null URN
 offers <- offers %>% 
-  filter(school_urn != "n/a")
+  filter(school_urn != "n/a") %>% 
+  mutate(school_urn = as.numeric(school_urn))
 ```
 
 Let's now review the selected column headings in this dataset and the number of unique values in each column
@@ -406,6 +449,23 @@ offers %>%
 ```
 
 Let's review the categorical values to ensure they are consistent and well labelled.
+
+```{r offers-review-time-period}
+# Review the unique values of time_period
+unique(offers$time_period)
+```
+
+These values should be recoded to match the `year_key` in the calendar table. We need to extract the academic start year, which is the first 4 digits of the value.
+
+```{r offers-recode-time-period}
+# Recode the values in time_period
+offers$time_period <- as.numeric(str_extract(offers$time_period, "^\\d{4}"))
+
+# Check the results
+unique(offers$time_period)
+```
+
+All ok.
 
 ```{r offers-review-denomination}
 # Review the unique values in denomination
@@ -440,11 +500,26 @@ unique(offers$entry_year)
 
 All ok.
 
+Finally, let's rename the columns.
+
+```{r offers-rename}
+# Rename the columns
+offers <- offers %>% 
+  rename(year = time_period,
+         la_code = old_la_code,
+         laestab = school_laestab_as_used,
+         number_of_preferences = number_preferences_la,
+         religious_denomination = denomination,
+         urn = school_urn,
+         nc_year = entry_year)
+```
+
 ## Performance
+
 From this dataset we really need to select one or two good measures of performance for KS2 and KS4, along with the URN so that we can join back to school.
 
-* For KS2 we'll used the progress measures `readprog`, `writprog` and `matprog`. [This article](https://www.theschoolrun.com/understanding-primary-school-league-tables) has a good explanation of the KS2 progress scores, and [this article](https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/851788/KS2_progress_banding_calculations_bandings_2019.pdf) explains how the bandings can be calculated.
-* For KS4 we'll use the progress 8 and attainment 8 measures `p8mea` and `att8scr`. [This article](https://www.goodschoolsguide.co.uk/curricula-and-exams/progress-8-attainment-8) has a good explanation of these measures.
+-   For KS2 we'll used the progress measures `readprog`, `writprog` and `matprog`. [This article](https://www.theschoolrun.com/understanding-primary-school-league-tables) has a good explanation of the KS2 progress scores, and [this article](https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/851788/KS2_progress_banding_calculations_bandings_2019.pdf) explains how the bandings can be calculated.
+-   For KS4 we'll use the progress 8 and attainment 8 measures `p8mea` and `att8scr`. [This article](https://www.goodschoolsguide.co.uk/curricula-and-exams/progress-8-attainment-8) has a good explanation of these measures.
 
 We will further need to filter both the KS2 and KS4 data to include only rows that are aggregated at the mainstream school level (`RECTYPE = 1`).
 
@@ -501,13 +576,19 @@ Now we can join the KS2 and KS4 data together and recode the progress measure na
 ```{r performance-combined}
 # Combine two data frames
 performance <- perf_ks2 %>% 
-  full_join(perf_ks4)
+  full_join(perf_ks4) %>% 
+  rename(reading_progress = readprog,
+         writing_progress = writprog,
+         maths_progress = matprog,
+         progress_8 = p8mea,
+         attainment_8 = att8scr)
 
 # View the head
 head(performance)
 ```
 
 ## Intake
+
 No cleaning required. We can simply rename without the `src_` prefix.
 
 ```{r intake-clean}
@@ -516,6 +597,7 @@ intake <- src_intake
 ```
 
 ## Calendar
+
 No cleaning required. We can simply rename without the `src_` prefix.
 
 ```{r calendar-clean}
@@ -524,15 +606,18 @@ calendar <- src_calendar
 ```
 
 # Model data
-The matrix below shows the fact and dimension tables that I intend to create for this model and the relationships between them.
-![bus-matrix-for-school-admissions-dashboard](images/bus-matrix.png)
+
+The matrix below shows the fact and dimension tables that I intend to create for this model and the relationships between them. ![bus-matrix-for-school-admissions-dashboard](images/bus-matrix.png)
 
 To build out the dimensional model for this data, we need to review all of the columns we intend to use, so that we can determine where they fit in the model. The custom function `describe_df()` contained in the `utils.R` file can help us with this.
+
 ```{r describe-df}
 # Create a vector of dfs to describe
 data <- list("info" = info,
              "offers" = offers,
-             "performance" = performance)
+             "performance" = performance,
+             "intake" = intake,
+             "calendar" = calendar)
 
 # Run describe_df() over each df
 t_data <- lapply(data, describe_df)
@@ -542,32 +627,38 @@ t_data <- bind_rows(t_data, .id = "source_table")
 ```
 
 After exporting the new `t_data` dataframe to a spreadsheet, I created a file named [star-schema](ref/star-schema.csv) which maps the raw source data to the corresponding dimension and fact tables for the star schema model.
+
 ```{r read-star-schema-planning}
 # Read in star schema planning document
-star_schema_path <- "https://drive.google.com/file/d/1wyopZkDzEQzPVMUrZBoiMNMGSdWxyk0i/view?usp=sharing"
-star_schema <- read_csv_gdrive(star_schema_path)
+star_schema_path <- "https://docs.google.com/spreadsheets/d/1rrlhlvFrnPpTQtn2YzWyJZzwlm-2wWAzDiEv6fKBoHU/edit?usp=sharing"
+star_schema <- read_sheet(star_schema_path,
+                          col_types = "c")
 ```
 
 ## Dimensions
+
 ### Local Authority
 
 The following columns are required for the local authority dimension table:
+
 ```{r dim-la-cols}
 # Which columns are needed for the local authority dimension?
 star_schema %>% 
   filter(model_table == "dim_la") %>% 
-  kable(caption = "Columns required for the local authority dimension")
+  kable()
 ```
 
 These columns can all come from the `offers` data frame.
 
 ```{r dim-la-build}
+# Define columns to include
+dim_la_cols <- star_schema %>% 
+  filter(model_table == "dim_la") %>% 
+  pull(source_field)
+
 # Build out the local authority dimension table
 dim_la <- offers %>% 
-  select(la_code = old_la_code,
-         la_name,
-         region_code,
-         region_name) %>% 
+  select(all_of(dim_la_cols)) %>% 
   distinct()
 
 # Check the result
@@ -610,30 +701,38 @@ dim_la <- dim_la %>%
 ```
 
 ### School
+
 The following fields are required for the school dimension.
 
 ```{r dim-school-cols}
 # Which columns are needed for the school dimension?
 star_schema %>% 
   filter(model_table == "dim_school") %>% 
-  kable(caption = "Columns required for the school dimension")
+  kable()
 ```
 
-These columns can all be found in the `info` table. We need to ensure that we include only the URNs in the `master_urn` column of our bridge table.
+These columns can all be found in the `info` and `offers` tables. We need to ensure that we include only the URNs in the `master_urn` column of our bridge table.
 
 ```{r dim-school-build}
+# Define columns to include
+dim_school_cols_info <- star_schema %>% 
+  filter(model_table == "dim_school",
+         source_table == "info") %>% 
+  pull(source_field)
+
+dim_school_cols_offers <- star_schema %>% 
+  filter(model_table == "dim_school",
+         source_table == "offers") %>% 
+  pull(source_field)
+
 # Build out the school dimension table
 dim_school <- brg_school %>% 
   select(urn = master_urn) %>% 
   left_join(select(info,
-                   urn,
-                   establishment_number,
-                   establishment_name,
-                   establishment_type = type_of_establishment_name,
-                   establishment_group = establishment_type_group_name,
-                   status = establishment_status_name,
-                   open_date,
-                   close_date,
-                   education_phase = phase_of_education_name))
+                   all_of(dim_school_cols_info))) %>% 
+  left_join(select(offers,
+                   all_of(dim_school_cols_offers))) %>% 
+  distinct()
 ```
 
+TODO: There are some duplicate URNs in dim_school.

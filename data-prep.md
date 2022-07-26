@@ -2,26 +2,28 @@ Source data preparation for the England school admissions dashboard
 ================
 Clare Gibson
 
--   [Introduction](#introduction)
-    -   [Source data](#source-data)
-    -   [Required packages](#required-packages)
-    -   [Custom functions](#custom-functions)
--   [Read data](#read-data)
-    -   [Info](#info)
-    -   [Offers](#offers)
-    -   [Performance](#performance)
-    -   [Intake](#intake)
-    -   [Calendar](#calendar)
--   [Clean data](#clean-data)
-    -   [Info](#info-1)
-    -   [Offers](#offers-1)
-    -   [Performance](#performance-1)
-    -   [Intake](#intake-1)
-    -   [Calendar](#calendar-1)
--   [Model data](#model-data)
-    -   [Dimensions](#dimensions)
-        -   [Local Authority](#local-authority)
-        -   [School](#school)
+-   <a href="#introduction" id="toc-introduction">Introduction</a>
+    -   <a href="#source-data" id="toc-source-data">Source data</a>
+    -   <a href="#required-packages" id="toc-required-packages">Required
+        packages</a>
+    -   <a href="#custom-functions" id="toc-custom-functions">Custom
+        functions</a>
+-   <a href="#read-data" id="toc-read-data">Read data</a>
+    -   <a href="#info" id="toc-info">Info</a>
+    -   <a href="#offers" id="toc-offers">Offers</a>
+    -   <a href="#performance" id="toc-performance">Performance</a>
+    -   <a href="#intake" id="toc-intake">Intake</a>
+    -   <a href="#calendar" id="toc-calendar">Calendar</a>
+-   <a href="#clean-data" id="toc-clean-data">Clean data</a>
+    -   <a href="#info-1" id="toc-info-1">Info</a>
+    -   <a href="#offers-1" id="toc-offers-1">Offers</a>
+    -   <a href="#performance-1" id="toc-performance-1">Performance</a>
+    -   <a href="#intake-1" id="toc-intake-1">Intake</a>
+    -   <a href="#calendar-1" id="toc-calendar-1">Calendar</a>
+-   <a href="#model-data" id="toc-model-data">Model data</a>
+    -   <a href="#dimensions" id="toc-dimensions">Dimensions</a>
+        -   <a href="#local-authority" id="toc-local-authority">Local Authority</a>
+        -   <a href="#school" id="toc-school">School</a>
 
 # Introduction
 
@@ -30,13 +32,9 @@ the England School Admissions Dashboard project
 ([github](https://github.com/clarelgibson/england-school-admissions) \|
 [tableau](https://public.tableau.com/views/Schools_16505251102060/Home?:language=en-GB&:display_count=n&:origin=viz_share_link)).
 
-I will begin by reading in the source data required for the dashboards.
-I will then explain my intended approach to convert the source data into
-a “star-schema” [dimensional
-model](https://en.wikipedia.org/wiki/Dimensional_modeling), using
-conformed dimensions to serve multiple fact tables. Finally I will work
-through the data wrangling steps necessary to prepare the dimensional
-model.
+The notebook begins by reading in the source data required for the
+dashboards. It then works through the data wrangling steps necessary to
+clean and prepare the data for transfer to Tableau.
 
 ## Source data
 
@@ -52,6 +50,7 @@ library(tidyverse)      # for general wrangling
 library(data.table)     # for transposing data frames
 library(janitor)        # for cleaning column headers
 library(lubridate)      # for working with dates
+library(googlesheets4)  # for reading in Google Sheets files
 ```
 
 ## Custom functions
@@ -307,16 +306,36 @@ terminology used in this dataset can be found
 [here](https://drive.google.com/drive/folders/1vai66CUaYhPI0RXQI-BlC5kufZZyf3JU?usp=sharing).
 
 The source data for performance is stored in several CSV files on the
-Google Drive. Having read through the guidance notes for these files, it
-seems that it is a difficult challenge to do a year-over-year comparison
-of performance, due to the changes that are frequently made to the way
-the tests are conducted and results reported. For the dashboard, I have
-decided to use only the performance figures from the most recent year.
-However, the data for previous years going back to 2014 is available in
-the Google Drive.
+Google Drive. Having read through the guidance notes for these files,
+for the measures I want to compare, I can find these in all years from
+2015/16 onwards.
 
 ``` r
-# Read in the most recent performance data files
+# Read in the performance data files from 2015/16 onwards
+# 2015-16 KS2
+src_perf_1516ks2_path <- "https://drive.google.com/file/d/1migtFWfMUr8HJDeujfw6h7p2nNDVsbp4/view?usp=sharing"
+src_perf_1516ks2 <- read_csv_gdrive(src_perf_1516ks2_path)
+
+# 2015-16 KS4
+src_perf_1516ks4_path <- "https://drive.google.com/file/d/1ijl88VsaaNdEC-N2O9hcRKc2sixcMyES/view?usp=sharing"
+src_perf_1516ks4 <- read_csv_gdrive(src_perf_1516ks4_path)
+
+# 2016-17 KS2
+src_perf_1617ks2_path <- "https://drive.google.com/file/d/1B1LpH8RXlBoH7C9mJPL4FribTvIUzekq/view?usp=sharing"
+src_perf_1617ks2 <- read_csv_gdrive(src_perf_1617ks2_path)
+
+# 2016-17 KS4
+src_perf_1617ks4_path <- "https://drive.google.com/file/d/1jOOmuKXDDp--cbESCz-j4Vp7ufVK3tPV/view?usp=sharing"
+src_perf_1617ks4 <- read_csv_gdrive(src_perf_1617ks4_path)
+
+# 2017-18 KS2
+src_perf_1718ks2_path <- "https://drive.google.com/file/d/1zJxcJrsOr7nvWwb6Yyg48QoMgSp76e8V/view?usp=sharing"
+src_perf_1718ks2 <- read_csv_gdrive(src_perf_1718ks2_path)
+
+# 2017-18 KS4
+src_perf_1718ks4_path <- "https://drive.google.com/file/d/1-5WDJ5dZulWmqQa8fX5eczA0Bo2m_jEc/view?usp=sharing"
+src_perf_1718ks4 <- read_csv_gdrive(src_perf_1718ks4_path)
+
 # 2018-19 KS2
 src_perf_1819ks2_path <- "https://drive.google.com/file/d/1CmXvDtDOmIlXXUzZ9SPW4Yoti-rTzi75/view?usp=sharing"
 src_perf_1819ks2 <- read_csv_gdrive(src_perf_1819ks2_path)
@@ -798,6 +817,32 @@ unique(info$ofsted_rating_score)
 
     ## [1]  1  2  3  4 NA
 
+Finally, let’s rename the columns in `info` to suit this analysis
+better.
+
+``` r
+# Rename columns in info
+info <- info %>% 
+  rename(establishment_type = type_of_establishment_name,
+         establishment_status = establishment_status_name,
+         education_phase = phase_of_education_name,
+         gender = gender_name,
+         religious_character = religious_character_name,
+         admissions_policy = admissions_policy_name,
+         county = county_name,
+         head_title = head_title_name,
+         gor = gor_name,
+         administrative_district = district_administrative_name,
+         administrative_ward = administrative_ward_name,
+         parliamentary_constituency = parliamentary_constituency_name,
+         urban_rural_indicator = urban_rural_name,
+         gssla_code = gssla_code_name,
+         msoa = msoa_name,
+         lsoa = lsoa_name,
+         ofsted_rating = ofsted_rating_name,
+         number_of_fsm = fsm)
+```
+
 ## Offers
 
 Let’s keep only the columns we need from `src_offers`. Some of the
@@ -820,12 +865,14 @@ offers <- src_offers %>%
          entry_year)
 ```
 
-Next we can filter out any records where the `school_urn` is `n/a`.
+Next we can filter out any records where the `school_urn` is `n/a` and
+convert the remaining values to numeric.
 
 ``` r
 # Remove entries with null URN
 offers <- offers %>% 
-  filter(school_urn != "n/a")
+  filter(school_urn != "n/a") %>% 
+  mutate(school_urn = as.numeric(school_urn))
 ```
 
 Let’s now review the selected column headings in this dataset and the
@@ -868,6 +915,29 @@ Let’s review the categorical values to ensure they are consistent and
 well labelled.
 
 ``` r
+# Review the unique values of time_period
+unique(offers$time_period)
+```
+
+    ## [1] 202223 202122 202021 201920 201819 201718 201617 201516 201415
+
+These values should be recoded to match the `year_key` in the calendar
+table. We need to extract the academic start year, which is the first 4
+digits of the value.
+
+``` r
+# Recode the values in time_period
+offers$time_period <- as.numeric(str_extract(offers$time_period, "^\\d{4}"))
+
+# Check the results
+unique(offers$time_period)
+```
+
+    ## [1] 2022 2021 2020 2019 2018 2017 2016 2015 2014
+
+All ok.
+
+``` r
 # Review the unique values in denomination
 unique(offers$denomination)
 ```
@@ -884,21 +954,22 @@ offers %>%
 ```
 
     ## # A tibble: 6 × 23
-    ##   time_period region_code region_name   old_la_code school_laestab_as_u… la_name
-    ##         <dbl> <chr>       <chr>               <dbl>                <dbl> <chr>  
-    ## 1      202223 E12000009   South West            803              8032016 South …
-    ## 2      202223 E12000004   East Midlands         830              8302064 Derbys…
-    ## 3      202223 E12000009   South West            865              8652044 Wiltsh…
-    ## 4      202223 E12000009   South West            865              8652054 Wiltsh…
-    ## 5      202223 E12000009   South West            866              8662022 Swindon
-    ## 6      202223 E12000008   South East            867              8672002 Brackn…
-    ## # … with 17 more variables: number_preferences_la <chr>,
-    ## #   total_number_places_offered <dbl>, number_preferred_offers <dbl>,
-    ## #   number_1st_preference_offers <dbl>, number_2nd_preference_offers <dbl>,
-    ## #   number_3rd_preference_offers <dbl>,
+    ##   time_period region_c…¹ regio…² old_l…³ schoo…⁴ la_name numbe…⁵ total…⁶ numbe…⁷
+    ##         <dbl> <chr>      <chr>     <dbl>   <dbl> <chr>   <chr>     <dbl>   <dbl>
+    ## 1        2022 E12000009  South …     803 8032016 South … 3            61      61
+    ## 2        2022 E12000004  East M…     830 8302064 Derbys… 3            30      30
+    ## 3        2022 E12000009  South …     865 8652044 Wiltsh… 3            30      30
+    ## 4        2022 E12000009  South …     865 8652054 Wiltsh… 3            35      34
+    ## 5        2022 E12000009  South …     866 8662022 Swindon 3            59      59
+    ## 6        2022 E12000008  South …     867 8672002 Brackn… 3            30      30
+    ## # … with 14 more variables: number_1st_preference_offers <dbl>,
+    ## #   number_2nd_preference_offers <dbl>, number_3rd_preference_offers <dbl>,
     ## #   times_put_as_any_preferred_school <dbl>, times_put_as_1st_preference <dbl>,
     ## #   times_put_as_2nd_preference <dbl>, times_put_as_3rd_preference <dbl>,
-    ## #   proportion_1stprefs_v_1stprefoffers <chr>, …
+    ## #   proportion_1stprefs_v_1stprefoffers <chr>,
+    ## #   proportion_1stprefs_v_totaloffers <chr>,
+    ## #   all_applications_from_another_la <dbl>, …
+    ## # ℹ Use `colnames()` to see all variable names
 
 I guess this must be for schools who did not report their denomination.
 Let’s replace `n/a` with `Not reported`.
@@ -924,6 +995,20 @@ unique(offers$entry_year)
 
 All ok.
 
+Finally, let’s rename the columns.
+
+``` r
+# Rename the columns
+offers <- offers %>% 
+  rename(year = time_period,
+         la_code = old_la_code,
+         laestab = school_laestab_as_used,
+         number_of_preferences = number_preferences_la,
+         religious_denomination = denomination,
+         urn = school_urn,
+         nc_year = entry_year)
+```
+
 ## Performance
 
 From this dataset we really need to select one or two good measures of
@@ -946,64 +1031,71 @@ rows that are aggregated at the mainstream school level (`RECTYPE = 1`).
 
 ``` r
 # Clean the KS2 data
-perf_ks2 <- src_perf_1819ks2 %>% 
+# Bind rows from all years
+perf_ks2 <- bind_rows(
+  "2015" = src_perf_1516ks2,
+  "2016" = src_perf_1617ks2,
+  "2017" = src_perf_1718ks2,
+  "2018" = src_perf_1819ks2,
+  .id = "year"
+) %>% 
   # Filter to rectype == 1
   filter(rectype == 1) %>% 
   # Select the required columns
-  select(urn,
+  select(year,
+         urn,
          readprog,
          writprog,
          matprog) %>% 
-  # Pivot data
-  pivot_longer(-urn,
-               names_to = "progress_measure",
-               values_to = "progress_value") %>% 
-  # Convert progress value to numeric
-  mutate(progress_value = as.numeric(progress_value))
+  # convert to numeric (any strings can be converted to NA)
+  mutate(across(everything(), as.numeric))
 
 # View the head
 head(perf_ks2)
 ```
 
-    ## # A tibble: 6 × 3
-    ##      urn progress_measure progress_value
-    ##    <dbl> <chr>                     <dbl>
-    ## 1 141279 readprog                    2.6
-    ## 2 141279 writprog                    2.3
-    ## 3 141279 matprog                     2  
-    ## 4 119910 readprog                    2.4
-    ## 5 119910 writprog                    3.8
-    ## 6 119910 matprog                    -1
+    ## # A tibble: 6 × 5
+    ##    year    urn readprog writprog matprog
+    ##   <dbl>  <dbl>    <dbl>    <dbl>   <dbl>
+    ## 1  2015 100000      2.7      2.2     3  
+    ## 2  2015 100028      2.6      4       3.5
+    ## 3  2015 100029      2.3      1.4     0.3
+    ## 4  2015 130342      3.4      2.2     2.3
+    ## 5  2015 100013      2        1.4     6  
+    ## 6  2015 100027      3.5      0.4     2.7
 
 ``` r
-# Clean the KS4 data
-perf_ks4 <- src_perf_1819ks4 %>% 
+# Bind rows from all years
+perf_ks4 <- bind_rows(
+  "2015" = select(src_perf_1516ks4, rectype, urn, p8mea, att8scr),
+  "2016" = select(src_perf_1617ks4, rectype, urn, p8mea, att8scr),
+  "2017" = select(src_perf_1718ks4, rectype, urn, p8mea, att8scr),
+  "2018" = select(src_perf_1819ks4, rectype, urn, p8mea, att8scr),
+  .id = "year"
+) %>% 
   # Filter to rectype == 1
   filter(rectype == 1) %>% 
   # Select the required columns
-  select(urn,
+  select(year,
+         urn,
          p8mea,
          att8scr) %>% 
-  # Pivot data
-  pivot_longer(-urn,
-               names_to = "progress_measure",
-               values_to = "progress_value") %>% 
-  # Convert progress value to numeric
-  mutate(progress_value = as.numeric(progress_value))
+  # convert to numeric (any strings can be converted to NA)
+  mutate(across(everything(), as.numeric))
 
 # View the head
 head(perf_ks4)
 ```
 
-    ## # A tibble: 6 × 3
-    ##      urn progress_measure progress_value
-    ##    <dbl> <chr>                     <dbl>
-    ## 1 100001 p8mea                     NA   
-    ## 2 100001 att8scr                   57.9 
-    ## 3 100003 p8mea                     NA   
-    ## 4 100003 att8scr                   20   
-    ## 5 100049 p8mea                     -0.11
-    ## 6 100049 att8scr                   42.4
+    ## # A tibble: 6 × 4
+    ##    year    urn p8mea att8scr
+    ##   <dbl>  <dbl> <dbl>   <dbl>
+    ## 1  2015 100003 NA       42.1
+    ## 2  2015 100001 NA       32.2
+    ## 3  2015 100053 -0.26    50.1
+    ## 4  2015 100054  0.31    60.1
+    ## 5  2015 137333 NA        3.4
+    ## 6  2015 100084 NA       49.4
 
 Now we can join the KS2 and KS4 data together and recode the progress
 measure names.
@@ -1011,29 +1103,27 @@ measure names.
 ``` r
 # Combine two data frames
 performance <- perf_ks2 %>% 
-  bind_rows(perf_ks4) %>% 
-  # Recode the progress measure names
-  mutate(progress_measure = case_when(
-    grepl("read.+", progress_measure) ~ "Reading progress score",
-    grepl("writ.+", progress_measure) ~ "Writing progress score",
-    grepl("mat.+", progress_measure) ~ "Maths progress score",
-    grepl("p8.+", progress_measure) ~ "Progress 8 score",
-    grepl("att8.+", progress_measure) ~ "Attainment 8 score"
-  ))
+  full_join(perf_ks4) %>% 
+  rename(reading_progress = readprog,
+         writing_progress = writprog,
+         maths_progress = matprog,
+         progress_8 = p8mea,
+         attainment_8 = att8scr)
 
 # View the head
 head(performance)
 ```
 
-    ## # A tibble: 6 × 3
-    ##      urn progress_measure       progress_value
-    ##    <dbl> <chr>                           <dbl>
-    ## 1 141279 Reading progress score            2.6
-    ## 2 141279 Writing progress score            2.3
-    ## 3 141279 Maths progress score              2  
-    ## 4 119910 Reading progress score            2.4
-    ## 5 119910 Writing progress score            3.8
-    ## 6 119910 Maths progress score             -1
+    ## # A tibble: 6 × 7
+    ##    year    urn reading_progress writing_progress maths_progress progre…¹ attai…²
+    ##   <dbl>  <dbl>            <dbl>            <dbl>          <dbl>    <dbl>   <dbl>
+    ## 1  2015 100000              2.7              2.2            3         NA      NA
+    ## 2  2015 100028              2.6              4              3.5       NA      NA
+    ## 3  2015 100029              2.3              1.4            0.3       NA      NA
+    ## 4  2015 130342              3.4              2.2            2.3       NA      NA
+    ## 5  2015 100013              2                1.4            6         NA      NA
+    ## 6  2015 100027              3.5              0.4            2.7       NA      NA
+    ## # … with abbreviated variable names ¹​progress_8, ²​attainment_8
 
 ## Intake
 
@@ -1068,7 +1158,9 @@ in the model. The custom function `describe_df()` contained in the
 # Create a vector of dfs to describe
 data <- list("info" = info,
              "offers" = offers,
-             "performance" = performance)
+             "performance" = performance,
+             "intake" = intake,
+             "calendar" = calendar)
 
 # Run describe_df() over each df
 t_data <- lapply(data, describe_df)
@@ -1084,8 +1176,9 @@ model.
 
 ``` r
 # Read in star schema planning document
-star_schema_path <- "https://drive.google.com/file/d/1wyopZkDzEQzPVMUrZBoiMNMGSdWxyk0i/view?usp=sharing"
-star_schema <- read_csv_gdrive(star_schema_path)
+star_schema_path <- "https://docs.google.com/spreadsheets/d/1rrlhlvFrnPpTQtn2YzWyJZzwlm-2wWAzDiEv6fKBoHU/edit?usp=sharing"
+star_schema <- read_sheet(star_schema_path,
+                          col_types = "c")
 ```
 
 ## Dimensions
@@ -1099,28 +1192,29 @@ table:
 # Which columns are needed for the local authority dimension?
 star_schema %>% 
   filter(model_table == "dim_la") %>% 
-  kable(caption = "Columns required for the local authority dimension")
+  kable()
 ```
 
 | source_table | source_field | source_value_example | model_table |
 |:-------------|:-------------|:---------------------|:------------|
-| info         | la_code      | 201                  | dim_la      |
-| info         | la_name      | City of London       | dim_la      |
+| info         | la_code      | 891                  | dim_la      |
+| info         | la_name      | Nottinghamshire      | dim_la      |
 | offers       | region_code  | E13000001            | dim_la      |
 | offers       | region_name  | Inner London         | dim_la      |
-| offers       | old_la_code  | 201                  | dim_la      |
-
-Columns required for the local authority dimension
+| offers       | la_code      | 201                  | dim_la      |
+| offers       | la_name      | City of London       | dim_la      |
 
 These columns can all come from the `offers` data frame.
 
 ``` r
+# Define columns to include
+dim_la_cols <- star_schema %>% 
+  filter(model_table == "dim_la") %>% 
+  pull(source_field)
+
 # Build out the local authority dimension table
 dim_la <- offers %>% 
-  select(la_code = old_la_code,
-         la_name,
-         region_code,
-         region_name) %>% 
+  select(all_of(dim_la_cols)) %>% 
   distinct()
 
 # Check the result
@@ -1199,79 +1293,84 @@ The following fields are required for the school dimension.
 # Which columns are needed for the school dimension?
 star_schema %>% 
   filter(model_table == "dim_school") %>% 
-  kable(caption = "Columns required for the school dimension")
+  kable()
 ```
 
-| source_table | source_field                    | source_value_example                    | model_table |
-|:-------------|:--------------------------------|:----------------------------------------|:------------|
-| info         | urn                             | 100000                                  | dim_school  |
-| info         | establishment_number            | 3614                                    | dim_school  |
-| info         | establishment_name              | The Aldgate School                      | dim_school  |
-| info         | type_of_establishment_name      | Voluntary aided school                  | dim_school  |
-| info         | establishment_type_group_name   | Local authority maintained schools      | dim_school  |
-| info         | establishment_status_name       | Open                                    | dim_school  |
-| info         | open_date                       | NA                                      | dim_school  |
-| info         | close_date                      | NA                                      | dim_school  |
-| info         | phase_of_education_name         | Primary                                 | dim_school  |
-| info         | statutory_low_age               | 3                                       | dim_school  |
-| info         | statutory_high_age              | 11                                      | dim_school  |
-| info         | gender_name                     | Mixed                                   | dim_school  |
-| info         | religious_character_name        | Church of England                       | dim_school  |
-| info         | admissions_policy_name          | Not applicable                          | dim_school  |
-| info         | ofsted_last_insp                | 41383                                   | dim_school  |
-| info         | last_changed_date               | 44677                                   | dim_school  |
-| info         | street                          | St James’s Passage                      | dim_school  |
-| info         | locality                        | Duke’s Place                            | dim_school  |
-| info         | address3                        | NA                                      | dim_school  |
-| info         | town                            | London                                  | dim_school  |
-| info         | county_name                     | NA                                      | dim_school  |
-| info         | postcode                        | EC3A 5DE                                | dim_school  |
-| info         | school_website                  | www.thealdgateschool.org                | dim_school  |
-| info         | telephone_num                   | 2072831147                              | dim_school  |
-| info         | head_title_name                 | Miss                                    | dim_school  |
-| info         | head_first_name                 | Alexandra                               | dim_school  |
-| info         | head_last_name                  | Allan                                   | dim_school  |
-| info         | head_preferred_job_title        | Headteacher                             | dim_school  |
-| info         | gor_name                        | London                                  | dim_school  |
-| info         | district_administrative_name    | City of London                          | dim_school  |
-| info         | administrative_ward_name        | Portsoken                               | dim_school  |
-| info         | parliamentary_constituency_name | Cities of London and Westminster        | dim_school  |
-| info         | urban_rural_name                | (England/Wales) Urban major conurbation | dim_school  |
-| info         | gssla_code_name                 | E09000001                               | dim_school  |
-| info         | easting                         | 533498                                  | dim_school  |
-| info         | northing                        | 181201                                  | dim_school  |
-| info         | msoa_name                       | City of London 001                      | dim_school  |
-| info         | lsoa_name                       | City of London 001F                     | dim_school  |
-| info         | ofsted_rating_name              | Outstanding                             | dim_school  |
-| info         | msoa_code                       | E02000001                               | dim_school  |
-| info         | lsoa_code                       | E01032739                               | dim_school  |
-| info         | ofsted_rating_score             | 1                                       | dim_school  |
-| offers       | school_laestab_as_used          | 2013614                                 | dim_school  |
-| offers       | denomination                    | Faith                                   | dim_school  |
-| offers       | school_urn                      | 100000                                  | dim_school  |
-| performance  | urn                             | 141279                                  | dim_school  |
+| source_table | source_field                  | source_value_example                  | model_table |
+|:-------------|:------------------------------|:--------------------------------------|:------------|
+| info         | urn                           | 131560                                | dim_school  |
+| info         | establishment_number          | 3793                                  | dim_school  |
+| info         | establishment_name            | Blidworth Oaks Primary School         | dim_school  |
+| info         | establishment_type            | Community school                      | dim_school  |
+| info         | establishment_type_group_name | Local authority maintained schools    | dim_school  |
+| info         | establishment_status          | Open, but proposed to close           | dim_school  |
+| info         | open_date                     | 39173                                 | dim_school  |
+| info         | close_date                    | 44773                                 | dim_school  |
+| info         | education_phase               | Primary                               | dim_school  |
+| info         | statutory_low_age             | 2                                     | dim_school  |
+| info         | statutory_high_age            | 11                                    | dim_school  |
+| info         | gender                        | Mixed                                 | dim_school  |
+| info         | religious_character           | Does not apply                        | dim_school  |
+| info         | admissions_policy             | Not applicable                        | dim_school  |
+| info         | ofsted_last_insp              | 42913                                 | dim_school  |
+| info         | last_changed_date             | 44735                                 | dim_school  |
+| info         | street                        | Haywood Avenue                        | dim_school  |
+| info         | locality                      | Blidworth                             | dim_school  |
+| info         | address3                      | Blidworth Oaks Primary School         | dim_school  |
+| info         | town                          | Mansfield                             | dim_school  |
+| info         | county                        | Nottinghamshire                       | dim_school  |
+| info         | postcode                      | NG21 0RE                              | dim_school  |
+| info         | school_website                | www.blidworthoaks.co.uk               | dim_school  |
+| info         | telephone_num                 | 1623792348                            | dim_school  |
+| info         | head_title                    | Mr                                    | dim_school  |
+| info         | head_first_name               | Shaun                                 | dim_school  |
+| info         | head_last_name                | Walker                                | dim_school  |
+| info         | head_preferred_job_title      | Headteacher                           | dim_school  |
+| info         | gor                           | East Midlands                         | dim_school  |
+| info         | administrative_district       | Newark and Sherwood                   | dim_school  |
+| info         | administrative_ward           | Rainworth South & Blidworth           | dim_school  |
+| info         | parliamentary_constituency    | Sherwood                              | dim_school  |
+| info         | urban_rural_indicator         | (England/Wales) Rural town and fringe | dim_school  |
+| info         | gssla_code                    | E10000024                             | dim_school  |
+| info         | easting                       | 459277                                | dim_school  |
+| info         | northing                      | 356444                                | dim_school  |
+| info         | msoa                          | Newark and Sherwood 006               | dim_school  |
+| info         | lsoa                          | Newark and Sherwood 006B              | dim_school  |
+| info         | ofsted_rating                 | Good                                  | dim_school  |
+| info         | msoa_code                     | E02005898                             | dim_school  |
+| info         | lsoa_code                     | E01028298                             | dim_school  |
+| offers       | laestab                       | 2013614                               | dim_school  |
+| offers       | religious_denomination        | Faith                                 | dim_school  |
+| offers       | urn                           | 100000                                | dim_school  |
+| performance  | urn                           | 137157                                | dim_school  |
 
-Columns required for the school dimension
-
-These columns can all be found in the `info` table. We need to ensure
-that we include only the URNs in the `master_urn` column of our bridge
-table.
+These columns can all be found in the `info` and `offers` tables. We
+need to ensure that we include only the URNs in the `master_urn` column
+of our bridge table.
 
 ``` r
+# Define columns to include
+dim_school_cols_info <- star_schema %>% 
+  filter(model_table == "dim_school",
+         source_table == "info") %>% 
+  pull(source_field)
+
+dim_school_cols_offers <- star_schema %>% 
+  filter(model_table == "dim_school",
+         source_table == "offers") %>% 
+  pull(source_field)
+
 # Build out the school dimension table
 dim_school <- brg_school %>% 
   select(urn = master_urn) %>% 
   left_join(select(info,
-                   urn,
-                   establishment_number,
-                   establishment_name,
-                   establishment_type = type_of_establishment_name,
-                   establishment_group = establishment_type_group_name,
-                   status = establishment_status_name,
-                   open_date,
-                   close_date,
-                   education_phase = phase_of_education_name))
+                   all_of(dim_school_cols_info))) %>% 
+  left_join(select(offers,
+                   all_of(dim_school_cols_offers))) %>% 
+  distinct()
 ```
+
+TODO: There are some duplicate URNs in dim_school.
 
 [^1]: Columns which have been detected as logical, or boolean, always
     raise a small red flag for me. It can be an indicator that the
