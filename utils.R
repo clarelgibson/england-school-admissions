@@ -30,8 +30,8 @@ describe_df <- function(df) {
   require(data.table)
   
   #df_name <- deparse(substitute(df))
-  t_df <- 
-    transpose(head(df, 1))
+  df <- na.omit(df)
+  t_df <- transpose(head(df, 1))
   rownames(t_df) <- colnames(df)
   t_df <- 
     t_df %>% 
@@ -39,6 +39,7 @@ describe_df <- function(df) {
     #mutate(source_table = df_name) %>% 
     rename(source_field = rowname,
            source_value_example = V1) %>% 
+    mutate(source_value_example = as.character(source_value_example)) %>% 
     select(#source_table,
            source_field,
            source_value_example)
