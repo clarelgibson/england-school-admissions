@@ -90,138 +90,7 @@ src_info_path <- "https://drive.google.com/file/d/1kUqKvphHnh4M-NfP4gXLAr9MxdxoW
 src_info <- read_csv_gdrive(src_info_path)
 ```
 
-``` r
-# List the columns and data types in the data frame
-glimpse(src_info)
-```
-
-    ## Rows: 36,704
-    ## Columns: 122
-    ## $ urn                              <dbl> 100000, 100008, 100009, 100010, 10001…
-    ## $ la_code                          <dbl> 201, 202, 202, 202, 202, 202, 202, 20…
-    ## $ la_name                          <chr> "City of London", "Camden", "Camden",…
-    ## $ establishment_number             <dbl> 3614, 2019, 2036, 2065, 2078, 2095, 2…
-    ## $ establishment_name               <chr> "The Aldgate School", "Argyle Primary…
-    ## $ type_of_establishment_name       <chr> "Voluntary aided school", "Community …
-    ## $ establishment_type_group_name    <chr> "Local authority maintained schools",…
-    ## $ establishment_status_name        <chr> "Open", "Open", "Open", "Open", "Open…
-    ## $ reason_establishment_opened_name <chr> "Not applicable", "Not applicable", "…
-    ## $ open_date                        <chr> NA, NA, NA, NA, NA, NA, NA, NA, NA, N…
-    ## $ reason_establishment_closed_name <chr> "Not applicable", "Not applicable", "…
-    ## $ close_date                       <chr> NA, NA, NA, NA, NA, "31-08-2021", NA,…
-    ## $ phase_of_education_name          <chr> "Primary", "Primary", "Primary", "Pri…
-    ## $ statutory_low_age                <dbl> 3, 3, 3, 2, 2, 3, 3, 3, 3, 7, 3, 2, 3…
-    ## $ statutory_high_age               <dbl> 11, 11, 11, 11, 11, 11, 11, 11, 11, 1…
-    ## $ boarders_name                    <chr> "No boarders", "No boarders", "No boa…
-    ## $ nursery_provision_name           <chr> "Has Nursery Classes", "Has Nursery C…
-    ## $ official_sixth_form_name         <chr> "Does not have a sixth form", "Does n…
-    ## $ gender_name                      <chr> "Mixed", "Mixed", "Mixed", "Mixed", "…
-    ## $ religious_character_name         <chr> "Church of England", "Does not apply"…
-    ## $ religious_ethos_name             <chr> "Does not apply", "Does not apply", "…
-    ## $ diocese_name                     <chr> "Diocese of London", "Not applicable"…
-    ## $ admissions_policy_name           <chr> "Not applicable", "Not applicable", "…
-    ## $ school_capacity                  <dbl> 276, 432, 446, 583, 459, 436, 232, 21…
-    ## $ special_classes_name             <chr> "No Special Classes", "No Special Cla…
-    ## $ census_date                      <chr> "21-01-2021", "21-01-2021", "21-01-20…
-    ## $ number_of_pupils                 <dbl> 270, 335, 418, 367, 407, 211, 191, 23…
-    ## $ number_of_boys                   <dbl> 133, 156, 231, 200, 212, 109, 88, 113…
-    ## $ number_of_girls                  <dbl> 137, 179, 187, 167, 195, 102, 103, 11…
-    ## $ percentage_fsm                   <dbl> 13.7, 51.9, 38.5, 49.1, 21.2, 57.8, 4…
-    ## $ trust_school_flag_name           <chr> "Not applicable", "Not applicable", "…
-    ## $ trusts_name                      <chr> NA, NA, NA, NA, NA, NA, NA, NA, NA, N…
-    ## $ school_sponsor_flag_name         <chr> "Not applicable", "Not applicable", "…
-    ## $ school_sponsors_name             <chr> NA, NA, NA, NA, NA, NA, NA, NA, NA, N…
-    ## $ federation_flag_name             <chr> "Not under a federation", "Not under …
-    ## $ federations_name                 <chr> NA, NA, NA, NA, NA, NA, NA, NA, NA, N…
-    ## $ ukprn                            <dbl> 10079319, 10078065, 10077183, 1007385…
-    ## $ fehe_identifier                  <lgl> NA, NA, NA, NA, NA, NA, NA, NA, NA, N…
-    ## $ further_education_type_name      <chr> "Not applicable", "Not applicable", "…
-    ## $ ofsted_last_insp                 <chr> "19-04-2013", "30-01-2019", "23-03-20…
-    ## $ last_changed_date                <chr> "26-04-2022", "18-05-2022", "16-06-20…
-    ## $ street                           <chr> "St James's Passage", "Tonbridge Stre…
-    ## $ locality                         <chr> "Duke's Place", NA, "West Hampstead",…
-    ## $ address3                         <chr> NA, NA, NA, NA, NA, NA, NA, NA, NA, N…
-    ## $ town                             <chr> "London", "London", "London", "London…
-    ## $ county_name                      <chr> NA, NA, NA, NA, NA, NA, NA, NA, NA, N…
-    ## $ postcode                         <chr> "EC3A 5DE", "WC1H 9EG", "NW6 1QL", "N…
-    ## $ school_website                   <chr> "www.thealdgateschool.org", "http://w…
-    ## $ telephone_num                    <dbl> 2072831147, 2078374590, 2074358646, 2…
-    ## $ head_title_name                  <chr> "Miss", "Ms", "Mr", "Ms", "Mrs", "Ms"…
-    ## $ head_first_name                  <chr> "Alexandra", "Jemima", "Samuel", "Hel…
-    ## $ head_last_name                   <chr> "Allan", "Wade", "Drake", "Bruckdorfe…
-    ## $ head_preferred_job_title         <chr> "Headteacher", "Headteacher", "Headte…
-    ## $ bso_inspectorate_name_name       <chr> "Not applicable", "Not applicable", "…
-    ## $ inspectorate_report              <lgl> NA, NA, NA, NA, NA, NA, NA, NA, NA, N…
-    ## $ date_of_last_inspection_visit    <lgl> NA, NA, NA, NA, NA, NA, NA, NA, NA, N…
-    ## $ next_inspection_visit            <lgl> NA, NA, NA, NA, NA, NA, NA, NA, NA, N…
-    ## $ teen_moth_name                   <chr> "Not applicable", "Not applicable", "…
-    ## $ teen_moth_places                 <lgl> NA, NA, NA, NA, NA, NA, NA, NA, NA, N…
-    ## $ ccf_name                         <chr> "Not applicable", "Not applicable", "…
-    ## $ senpru_name                      <chr> "Not applicable", "Not applicable", "…
-    ## $ ebd_name                         <chr> "Not applicable", "Not applicable", "…
-    ## $ places_pru                       <dbl> NA, NA, NA, NA, NA, NA, NA, NA, NA, N…
-    ## $ ft_prov_name                     <chr> NA, NA, NA, NA, NA, NA, NA, NA, NA, N…
-    ## $ ed_by_other_name                 <chr> "Not applicable", "Not applicable", "…
-    ## $ section41approved_name           <chr> "Not applicable", "Not applicable", "…
-    ## $ sen1_name                        <chr> NA, NA, NA, NA, NA, NA, NA, NA, NA, N…
-    ## $ sen2_name                        <chr> NA, NA, NA, NA, NA, NA, NA, NA, NA, N…
-    ## $ sen3_name                        <chr> NA, NA, NA, NA, NA, NA, NA, NA, NA, N…
-    ## $ sen4_name                        <chr> NA, NA, NA, NA, NA, NA, NA, NA, NA, N…
-    ## $ sen5_name                        <chr> NA, NA, NA, NA, NA, NA, NA, NA, NA, N…
-    ## $ sen6_name                        <chr> NA, NA, NA, NA, NA, NA, NA, NA, NA, N…
-    ## $ sen7_name                        <chr> NA, NA, NA, NA, NA, NA, NA, NA, NA, N…
-    ## $ sen8_name                        <chr> NA, NA, NA, NA, NA, NA, NA, NA, NA, N…
-    ## $ sen9_name                        <chr> NA, NA, NA, NA, NA, NA, NA, NA, NA, N…
-    ## $ sen10_name                       <chr> NA, NA, NA, NA, NA, NA, NA, NA, NA, N…
-    ## $ sen11_name                       <chr> NA, NA, NA, NA, NA, NA, NA, NA, NA, N…
-    ## $ sen12_name                       <chr> NA, NA, NA, NA, NA, NA, NA, NA, NA, N…
-    ## $ sen13_name                       <chr> NA, NA, NA, NA, NA, NA, NA, NA, NA, N…
-    ## $ type_of_resourced_provision_name <chr> NA, NA, NA, NA, NA, "Not applicable",…
-    ## $ resourced_provision_on_roll      <dbl> NA, NA, NA, NA, NA, NA, NA, NA, NA, N…
-    ## $ resourced_provision_capacity     <dbl> NA, NA, NA, NA, NA, NA, NA, NA, NA, N…
-    ## $ sen_unit_on_roll                 <dbl> NA, NA, NA, NA, NA, NA, NA, NA, NA, N…
-    ## $ sen_unit_capacity                <dbl> NA, NA, NA, NA, NA, NA, NA, NA, NA, N…
-    ## $ gor_name                         <chr> "London", "London", "London", "London…
-    ## $ district_administrative_name     <chr> "City of London", "Camden", "Camden",…
-    ## $ administrative_ward_name         <chr> "Portsoken", "King's Cross", "Fortune…
-    ## $ parliamentary_constituency_name  <chr> "Cities of London and Westminster", "…
-    ## $ urban_rural_name                 <chr> "(England/Wales) Urban major conurbat…
-    ## $ gssla_code_name                  <chr> "E09000001", "E09000007", "E09000007"…
-    ## $ easting                          <dbl> 533498, 530238, 524888, 529912, 52870…
-    ## $ northing                         <dbl> 181201, 182761, 185067, 184835, 18659…
-    ## $ msoa_name                        <chr> "City of London 001", "Camden 025", "…
-    ## $ lsoa_name                        <chr> "City of London 001F", "Camden 025C",…
-    ## $ inspectorate_name_name           <chr> NA, NA, NA, NA, NA, NA, NA, NA, NA, N…
-    ## $ sen_stat                         <lgl> NA, NA, NA, NA, NA, NA, NA, NA, NA, N…
-    ## $ sen_no_stat                      <lgl> NA, NA, NA, NA, NA, NA, NA, NA, NA, N…
-    ## $ props_name                       <lgl> NA, NA, NA, NA, NA, NA, NA, NA, NA, N…
-    ## $ ofsted_rating_name               <chr> "Outstanding", "Good", "Good", "Good"…
-    ## $ rsc_region_name                  <chr> "North-West London and South-Central …
-    ## $ country_name                     <chr> NA, NA, NA, NA, NA, NA, NA, NA, NA, N…
-    ## $ uprn                             <dbl> 200000071925, 5090707, 5090655, 50906…
-    ## $ site_name                        <lgl> NA, NA, NA, NA, NA, NA, NA, NA, NA, N…
-    ## $ qab_name_name                    <chr> "Not applicable", "Not applicable", "…
-    ## $ establishment_accredited_name    <chr> "Not applicable", "Not applicable", "…
-    ## $ qab_report                       <lgl> NA, NA, NA, NA, NA, NA, NA, NA, NA, N…
-    ## $ ch_number                        <lgl> NA, NA, NA, NA, NA, NA, NA, NA, NA, N…
-    ## $ msoa_code                        <chr> "E02000001", "E02000190", "E02000170"…
-    ## $ lsoa_code                        <chr> "E01032739", "E01000941", "E01000873"…
-    ## $ fsm                              <dbl> 37, 174, 161, 164, 84, 122, 92, 90, 6…
-    ## $ link_1                           <chr> "Does not have links", "Does not have…
-    ## $ link_2                           <chr> NA, NA, NA, NA, NA, NA, NA, NA, NA, N…
-    ## $ link_3                           <chr> NA, NA, NA, NA, NA, NA, NA, NA, NA, N…
-    ## $ link_4                           <chr> NA, NA, NA, NA, NA, NA, NA, NA, NA, N…
-    ## $ link_5                           <chr> NA, NA, NA, NA, NA, NA, NA, NA, NA, N…
-    ## $ link_6                           <chr> NA, NA, NA, NA, NA, NA, NA, NA, NA, N…
-    ## $ link_7                           <chr> NA, NA, NA, NA, NA, NA, NA, NA, NA, N…
-    ## $ link_8                           <chr> NA, NA, NA, NA, NA, NA, NA, NA, NA, N…
-    ## $ link_9                           <chr> NA, NA, NA, NA, NA, NA, NA, NA, NA, N…
-    ## $ link_10                          <chr> NA, NA, NA, NA, NA, NA, NA, NA, NA, N…
-    ## $ link_11                          <chr> NA, NA, NA, NA, NA, NA, NA, NA, NA, N…
-    ## $ link_12                          <chr> NA, NA, NA, NA, NA, NA, NA, NA, NA, N…
-
-This data frame has 36704 rows and 122 columns. The columns are a mix of
-character, numeric and logical[^1] data types. The columns include some
+This data frame has 36704 rows and 122 columns. The columns include some
 identifiers for time, geography and school, some descriptive dimensions
 about each school and some measures relating to the number of pupils of
 different types. Each row represents a single school and the data
@@ -242,49 +111,6 @@ Once again, we can connect to it through Google Drive.
 src_offers_path <- "https://drive.google.com/file/d/1bG0a0WRg-LEnASl6M3J0qyHJA_cMY1CQ/view?usp=sharing"
 src_offers <- read_csv_gdrive(src_offers_path)
 ```
-
-``` r
-# List the columns and data types in the data frame
-glimpse(src_offers)
-```
-
-    ## Rows: 171,385
-    ## Columns: 35
-    ## $ time_period                          <dbl> 202223, 202223, 202223, 202223, 2…
-    ## $ time_identifier                      <chr> "Academic year", "Academic year",…
-    ## $ geographic_level                     <chr> "School", "School", "School", "Sc…
-    ## $ country_code                         <chr> "E92000001", "E92000001", "E92000…
-    ## $ country_name                         <chr> "England", "England", "England", …
-    ## $ region_code                          <chr> "E13000001", "E13000001", "E13000…
-    ## $ region_name                          <chr> "Inner London", "Inner London", "…
-    ## $ old_la_code                          <dbl> 201, 202, 202, 202, 202, 202, 202…
-    ## $ new_la_code                          <chr> "E09000001", "E09000007", "E09000…
-    ## $ la_name                              <chr> "City of London", "Camden", "Camd…
-    ## $ school_phase                         <chr> "Primary", "Primary", "Primary", …
-    ## $ school_laestab_as_used               <dbl> 2013614, 2022000, 2022001, 202200…
-    ## $ number_preferences_la                <chr> "6", "6", "6", "6", "6", "6", "6"…
-    ## $ school_name                          <chr> "The Aldgate School", "St Luke's …
-    ## $ total_number_places_offered          <dbl> 30, 15, 30, 60, 43, 60, 37, 48, 3…
-    ## $ number_preferred_offers              <dbl> 30, 15, 30, 60, 38, 60, 35, 48, 3…
-    ## $ number_1st_preference_offers         <dbl> 30, 11, 23, 51, 34, 43, 28, 31, 2…
-    ## $ number_2nd_preference_offers         <dbl> 0, 3, 3, 6, 3, 10, 4, 9, 0, 5, 3,…
-    ## $ number_3rd_preference_offers         <dbl> 0, 1, 3, 3, 1, 2, 2, 2, 2, 1, 0, …
-    ## $ times_put_as_any_preferred_school    <dbl> 81, 94, 129, 163, 72, 150, 98, 12…
-    ## $ times_put_as_1st_preference          <dbl> 42, 21, 34, 56, 34, 44, 28, 31, 2…
-    ## $ times_put_as_2nd_preference          <dbl> 16, 26, 34, 41, 14, 37, 20, 27, 1…
-    ## $ times_put_as_3rd_preference          <dbl> 6, 24, 23, 25, 11, 23, 15, 13, 16…
-    ## $ proportion_1stprefs_v_1stprefoffers  <chr> "1.4", "1.909090909", "1.47826087…
-    ## $ proportion_1stprefs_v_totaloffers    <chr> "1.4", "1.4", "1.133333333", "0.9…
-    ## $ all_applications_from_another_la     <dbl> 62, 19, 8, 54, 5, 34, 46, 35, 0, …
-    ## $ offers_to_applicants_from_another_la <chr> "16", "3", "1", "20", "2", "11", …
-    ## $ establishment_type                   <chr> "Voluntary aided school", "Free s…
-    ## $ denomination                         <chr> "Faith", "Faith", "No religious c…
-    ## $ fsm_eligible_percent                 <chr> "13.7", "22.4", "12.8", "34.2", "…
-    ## $ admissions_policy                    <chr> "n/a", "n/a", "n/a", "n/a", "n/a"…
-    ## $ urban_rural                          <chr> "Urban major conurbation", "Urban…
-    ## $ allthrough_school                    <chr> "No", "No", "No", "No", "No", "No…
-    ## $ school_urn                           <chr> "100000", "136807", "139837", "14…
-    ## $ entry_year                           <chr> "R", "R", "R", "R", "R", "R", "R"…
 
 From the code outputs above, we can see that this data frame has 171385
 rows and 35 columns (a mix of character and numeric data types). The
@@ -360,22 +186,6 @@ src_intake_path <- "https://drive.google.com/file/d/1ASiYEbIbXg7VVNnkz3N1Cg1lHNq
 src_intake <- read_csv_gdrive(src_intake_path)
 ```
 
-``` r
-# List the columns and data types in the data frame
-glimpse(src_intake)
-```
-
-    ## Rows: 14
-    ## Columns: 8
-    ## $ nc_key              <dbl> 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14
-    ## $ nc_year             <chr> "R", "1", "2", "3", "4", "5", "6", "7", "8", "9", …
-    ## $ nc_year_description <chr> "Reception", "Year 1", "Year 2", "Year 3", "Year 4…
-    ## $ education_phase     <chr> "Primary", "Primary", "Primary", "Primary", "Prima…
-    ## $ education_subphase  <chr> "Infant", "Infant", "Infant", "Junior", "Junior", …
-    ## $ key_stage           <chr> "EYFS", "KS1", "KS1", "KS2", "KS2", "KS2", "KS2", …
-    ## $ statutory_age_min   <dbl> 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17
-    ## $ statutory_age_max   <dbl> 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18
-
 This dataset has 14 rows and 8 columns and contains largely descriptive
 information about the academic year groups in England.
 
@@ -389,20 +199,6 @@ data.
 src_calendar_path <- "https://drive.google.com/file/d/1el2cL02nQidzN1pMcZ7AUb3h6wXuzN_E/view?usp=sharing"
 src_calendar <- read_csv_gdrive(src_calendar_path)
 ```
-
-``` r
-# List the columns and data types in the data frame
-glimpse(src_calendar)
-```
-
-    ## Rows: 100
-    ## Columns: 6
-    ## $ year_key            <dbl> 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 20…
-    ## $ academic_year_start <dbl> 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 20…
-    ## $ academic_year_end   <dbl> 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 20…
-    ## $ academic_year_full  <chr> "2000-2001", "2001-2002", "2002-2003", "2003-2004"…
-    ## $ academic_year_short <chr> "00-01", "01-02", "02-03", "03-04", "04-05", "05-0…
-    ## $ covid_indicator     <chr> "Pre-Pandemic", "Pre-Pandemic", "Pre-Pandemic", "P…
 
 This will be our date table. Since the lowest unit of time in the data
 is year, this is the level of detail of the calendar table. This table
@@ -421,7 +217,7 @@ call `brg_school`.
 
 ``` r
 # Set up the bridge table
-brg_school_unfiltered <- src_info %>%
+brg_school <- src_info %>%
   # select required columns
   select(master_urn = urn,
          status = establishment_status_name,
@@ -443,7 +239,7 @@ At this point, we can stop and check what are the unique values of the
 
 ``` r
 # What are the unique values of link_type
-unique(brg_school_unfiltered$link_type)
+unique(brg_school$link_type)
 ```
 
     ##  [1] "Does not have links"                                           
@@ -472,7 +268,7 @@ to those master URNs.
 
 ``` r
 # Filter the table
-brg_school <- brg_school_unfiltered %>% 
+brg_school <- brg_school %>% 
   # add self-urn
   mutate(self_urn = master_urn) %>% 
   pivot_longer(cols = c(linked_urn, self_urn),
@@ -530,6 +326,48 @@ info <- info %>%
          msoa_code:fsm)
 ```
 
+Now we can rename the columns more appropriately.
+
+``` r
+# Rename columns in info
+info <- info %>% 
+  rename(establishment_type = type_of_establishment_name,
+         establishment_type_group = establishment_type_group_name,
+         establishment_status = establishment_status_name,
+         education_phase = phase_of_education_name,
+         gender = gender_name,
+         religious_character = religious_character_name,
+         admissions_policy = admissions_policy_name,
+         county = county_name,
+         head_title = head_title_name,
+         gor = gor_name,
+         administrative_district = district_administrative_name,
+         administrative_ward = administrative_ward_name,
+         parliamentary_constituency = parliamentary_constituency_name,
+         urban_rural_indicator = urban_rural_name,
+         gss_la_code = gssla_code_name,
+         msoa = msoa_name,
+         lsoa = lsoa_name,
+         ofsted_rating = ofsted_rating_name,
+         number_of_fsm = fsm)
+```
+
+And convert the columns to the correct data types.
+
+``` r
+# Define the columns by type
+info_date <- c("open_date",
+               "close_date",
+               "ofsted_last_insp",
+               "last_changed_date")
+
+# Correct the data types in info
+info <- info %>% 
+  mutate(across(all_of(info_date), dmy)) %>% 
+  mutate(telephone_num = as.character(telephone_num),
+         telephone_num = paste0("0", telephone_num))
+```
+
 Let’s now review the selected column headings in this dataset and the
 number of unique values in each column
 
@@ -541,56 +379,56 @@ info %>%
   rename(unique_values = V1)
 ```
 
-    ##                              field unique_values
-    ## 1                              urn         20188
-    ## 2                          la_code           152
-    ## 3                          la_name           152
-    ## 4             establishment_number          2531
-    ## 5               establishment_name         18522
-    ## 6       type_of_establishment_name             9
-    ## 7    establishment_type_group_name             3
-    ## 8        establishment_status_name             2
-    ## 9                        open_date           311
-    ## 10                      close_date             8
-    ## 11         phase_of_education_name             5
-    ## 12               statutory_low_age            14
-    ## 13              statutory_high_age            13
-    ## 14                     gender_name             4
-    ## 15        religious_character_name            29
-    ## 16          admissions_policy_name             4
-    ## 17                 school_capacity          1488
-    ## 18                number_of_pupils          1735
-    ## 19                  number_of_boys          1050
-    ## 20                 number_of_girls          1065
-    ## 21                  percentage_fsm           708
-    ## 22                ofsted_last_insp          1487
-    ## 23               last_changed_date           294
-    ## 24                          street         13495
-    ## 25                        locality          6591
-    ## 26                        address3           991
-    ## 27                            town          1427
-    ## 28                     county_name            58
-    ## 29                        postcode         19440
-    ## 30                  school_website         19603
-    ## 31                   telephone_num         20035
-    ## 32                 head_title_name            19
-    ## 33                 head_first_name          2252
-    ## 34                  head_last_name          8079
-    ## 35        head_preferred_job_title           152
-    ## 36                        gor_name             9
-    ## 37    district_administrative_name           309
-    ## 38        administrative_ward_name          6249
-    ## 39 parliamentary_constituency_name           533
-    ## 40                urban_rural_name            10
-    ## 41                 gssla_code_name           153
-    ## 42                         easting         19149
-    ## 43                        northing         19321
-    ## 44                       msoa_name          6579
-    ## 45                       lsoa_name         15565
-    ## 46              ofsted_rating_name             6
-    ## 47                       msoa_code          6579
-    ## 48                       lsoa_code         15565
-    ## 49                             fsm           525
+    ##                         field unique_values
+    ## 1                         urn         20188
+    ## 2                     la_code           152
+    ## 3                     la_name           152
+    ## 4        establishment_number          2531
+    ## 5          establishment_name         18522
+    ## 6          establishment_type             9
+    ## 7    establishment_type_group             3
+    ## 8        establishment_status             2
+    ## 9                   open_date           311
+    ## 10                 close_date             8
+    ## 11            education_phase             5
+    ## 12          statutory_low_age            14
+    ## 13         statutory_high_age            13
+    ## 14                     gender             4
+    ## 15        religious_character            29
+    ## 16          admissions_policy             4
+    ## 17            school_capacity          1488
+    ## 18           number_of_pupils          1735
+    ## 19             number_of_boys          1050
+    ## 20            number_of_girls          1065
+    ## 21             percentage_fsm           708
+    ## 22           ofsted_last_insp          1487
+    ## 23          last_changed_date           294
+    ## 24                     street         13495
+    ## 25                   locality          6591
+    ## 26                   address3           991
+    ## 27                       town          1427
+    ## 28                     county            58
+    ## 29                   postcode         19440
+    ## 30             school_website         19603
+    ## 31              telephone_num         20035
+    ## 32                 head_title            19
+    ## 33            head_first_name          2252
+    ## 34             head_last_name          8079
+    ## 35   head_preferred_job_title           152
+    ## 36                        gor             9
+    ## 37    administrative_district           309
+    ## 38        administrative_ward          6249
+    ## 39 parliamentary_constituency           533
+    ## 40      urban_rural_indicator            10
+    ## 41                gss_la_code           153
+    ## 42                    easting         19149
+    ## 43                   northing         19321
+    ## 44                       msoa          6579
+    ## 45                       lsoa         15565
+    ## 46              ofsted_rating             6
+    ## 47                  msoa_code          6579
+    ## 48                  lsoa_code         15565
+    ## 49              number_of_fsm           525
 
 Some columns have relatively few unique values, making these columns
 clearly categorical. I’d like to review the values to ensure they are
@@ -598,7 +436,7 @@ consistent and well labelled.
 
 ``` r
 # Review the unique values in establishment type
-unique(info$type_of_establishment_name)
+unique(info$establishment_type)
 ```
 
     ## [1] "Voluntary aided school"       "Community school"            
@@ -613,7 +451,7 @@ has some useful definitions of the different types of school.
 
 ``` r
 # Review the unique values in establishment group
-unique(info$establishment_type_group_name)
+unique(info$establishment_type_group)
 ```
 
     ## [1] "Local authority maintained schools" "Academies"                         
@@ -623,7 +461,7 @@ All ok.
 
 ``` r
 # Review the unique values in establishment status
-unique(info$establishment_status_name)
+unique(info$establishment_status)
 ```
 
     ## [1] "Open"                        "Open, but proposed to close"
@@ -632,7 +470,7 @@ All ok.
 
 ``` r
 # Review the unique values in phase of education
-unique(info$phase_of_education_name)
+unique(info$education_phase)
 ```
 
     ## [1] "Primary"                 "Secondary"              
@@ -643,7 +481,7 @@ All ok.
 
 ``` r
 # Review the unique values in gender
-unique(info$gender_name)
+unique(info$gender)
 ```
 
     ## [1] "Mixed" "Girls" "Boys"  NA
@@ -652,10 +490,10 @@ Some missing values here. Let’s replace those with ‘Not reported’.
 
 ``` r
 # Convert missing values in gender
-info$gender_name[is.na(info$gender_name)] <- "Not reported"
+info$gender[is.na(info$gender)] <- "Not reported"
 
 # Check the results
-unique(info$gender_name)
+unique(info$gender)
 ```
 
     ## [1] "Mixed"        "Girls"        "Boys"         "Not reported"
@@ -664,7 +502,7 @@ All ok.
 
 ``` r
 # Review the unique values in religious character
-unique(info$religious_character_name)
+unique(info$religious_character)
 ```
 
     ##  [1] "Church of England"                                       
@@ -701,11 +539,11 @@ Again, let’s fix the missing values.
 
 ``` r
 # Convert missing values in religious character
-info$religious_character_name[is.na(info$religious_character_name)] <- 
+info$religious_character[is.na(info$religious_character)] <- 
   "Not reported"
 
 # Check the results
-unique(info$religious_character_name)
+unique(info$religious_character)
 ```
 
     ##  [1] "Church of England"                                       
@@ -742,7 +580,7 @@ All ok.
 
 ``` r
 # Review the unique values in admissions policy
-unique(info$admissions_policy_name)
+unique(info$admissions_policy)
 ```
 
     ## [1] "Not applicable" "Non-selective"  "Selective"      NA
@@ -751,11 +589,11 @@ Again let’s fix the missing values.
 
 ``` r
 # Convert missing values in admissions policy
-info$admissions_policy_name[is.na(info$admissions_policy_name)] <- 
+info$admissions_policy[is.na(info$admissions_policy)] <- 
   "Not reported"
 
 # Check the results
-unique(info$admissions_policy_name)
+unique(info$admissions_policy)
 ```
 
     ## [1] "Not applicable" "Non-selective"  "Selective"      "Not reported"
@@ -764,7 +602,7 @@ All ok.
 
 ``` r
 # Review the unique values in ofsted rating
-unique(info$ofsted_rating_name)
+unique(info$ofsted_rating)
 ```
 
     ## [1] "Outstanding"          "Good"                 "Requires improvement"
@@ -791,21 +629,21 @@ measure.
 ``` r
 # Fix values for ofsted rating
 info <- info %>% 
-    mutate(ofsted_rating_name = case_when(
-      grepl("Weakness", ofsted_rating_name) ~ "Inadequate",
-      grepl("Measures", ofsted_rating_name) ~ "Inadequate",
-      is.na(ofsted_rating_name) ~ "Not reported",
-      TRUE ~ ofsted_rating_name
+    mutate(ofsted_rating = case_when(
+      grepl("Weakness", ofsted_rating) ~ "Inadequate",
+      grepl("Measures", ofsted_rating) ~ "Inadequate",
+      is.na(ofsted_rating) ~ "Not reported",
+      TRUE ~ ofsted_rating
     ),
     ofsted_rating_score = case_when(
-    grepl("Outstanding", ofsted_rating_name) ~ 1,
-    grepl("Good", ofsted_rating_name) ~ 2,
-    grepl("improvement", ofsted_rating_name) ~ 3,
-    grepl("Inadequate", ofsted_rating_name) ~ 4
+    grepl("Outstanding", ofsted_rating) ~ 1,
+    grepl("Good", ofsted_rating) ~ 2,
+    grepl("improvement", ofsted_rating) ~ 3,
+    grepl("Inadequate", ofsted_rating) ~ 4
   ))
 
 # Check results
-unique(info$ofsted_rating_name)
+unique(info$ofsted_rating)
 ```
 
     ## [1] "Outstanding"          "Good"                 "Requires improvement"
@@ -816,32 +654,6 @@ unique(info$ofsted_rating_score)
 ```
 
     ## [1]  1  2  3  4 NA
-
-Finally, let’s rename the columns in `info` to suit this analysis
-better.
-
-``` r
-# Rename columns in info
-info <- info %>% 
-  rename(establishment_type = type_of_establishment_name,
-         establishment_status = establishment_status_name,
-         education_phase = phase_of_education_name,
-         gender = gender_name,
-         religious_character = religious_character_name,
-         admissions_policy = admissions_policy_name,
-         county = county_name,
-         head_title = head_title_name,
-         gor = gor_name,
-         administrative_district = district_administrative_name,
-         administrative_ward = administrative_ward_name,
-         parliamentary_constituency = parliamentary_constituency_name,
-         urban_rural_indicator = urban_rural_name,
-         gssla_code = gssla_code_name,
-         msoa = msoa_name,
-         lsoa = lsoa_name,
-         ofsted_rating = ofsted_rating_name,
-         number_of_fsm = fsm)
-```
 
 ## Offers
 
@@ -856,7 +668,6 @@ offers <- src_offers %>%
          region_code,
          region_name,
          old_la_code,
-         school_laestab_as_used,
          la_name,
          number_preferences_la,
          total_number_places_offered:offers_to_applicants_from_another_la,
@@ -865,14 +676,41 @@ offers <- src_offers %>%
          entry_year)
 ```
 
+Next we can rename the columns more appropriately.
+
+``` r
+# Rename the columns
+offers <- offers %>% 
+  rename(year = time_period,
+         la_code = old_la_code,
+         number_of_preferences = number_preferences_la,
+         religious_denomination = denomination,
+         urn = school_urn,
+         nc_year = entry_year)
+```
+
 Next we can filter out any records where the `school_urn` is `n/a` and
 convert the remaining values to numeric.
 
 ``` r
 # Remove entries with null URN
 offers <- offers %>% 
-  filter(school_urn != "n/a") %>% 
-  mutate(school_urn = as.numeric(school_urn))
+  filter(urn != "n/a") %>% 
+  mutate(urn = as.numeric(urn))
+```
+
+Now we can check and correct the data types.
+
+``` r
+# Define cols to be converted
+offers_num <- c("number_of_preferences",
+                "proportion_1stprefs_v_1stprefoffers",
+                "proportion_1stprefs_v_totaloffers",
+                "offers_to_applicants_from_another_la")
+
+# Correct data types in offers
+offers <- offers %>% 
+  mutate(across(all_of(offers_num), as.numeric))
 ```
 
 Let’s now review the selected column headings in this dataset and the
@@ -887,36 +725,35 @@ offers %>%
 ```
 
     ##                                   field unique_values
-    ## 1                           time_period             9
+    ## 1                                  year             9
     ## 2                           region_code            10
     ## 3                           region_name            10
-    ## 4                           old_la_code           155
-    ## 5                school_laestab_as_used         21371
-    ## 6                               la_name           157
-    ## 7                 number_preferences_la             5
-    ## 8           total_number_places_offered           425
-    ## 9               number_preferred_offers           425
-    ## 10         number_1st_preference_offers           403
-    ## 11         number_2nd_preference_offers           108
-    ## 12         number_3rd_preference_offers            61
-    ## 13    times_put_as_any_preferred_school          1599
-    ## 14          times_put_as_1st_preference           593
-    ## 15          times_put_as_2nd_preference           539
-    ## 16          times_put_as_3rd_preference           438
-    ## 17  proportion_1stprefs_v_1stprefoffers          9830
-    ## 18    proportion_1stprefs_v_totaloffers         15432
-    ## 19     all_applications_from_another_la           760
-    ## 20 offers_to_applicants_from_another_la           197
-    ## 21                         denomination             3
-    ## 22                           school_urn         24404
-    ## 23                           entry_year             3
+    ## 4                               la_code           155
+    ## 5                               la_name           157
+    ## 6                 number_of_preferences             5
+    ## 7           total_number_places_offered           425
+    ## 8               number_preferred_offers           425
+    ## 9          number_1st_preference_offers           403
+    ## 10         number_2nd_preference_offers           108
+    ## 11         number_3rd_preference_offers            61
+    ## 12    times_put_as_any_preferred_school          1599
+    ## 13          times_put_as_1st_preference           593
+    ## 14          times_put_as_2nd_preference           539
+    ## 15          times_put_as_3rd_preference           438
+    ## 16  proportion_1stprefs_v_1stprefoffers          9826
+    ## 17    proportion_1stprefs_v_totaloffers         15429
+    ## 18     all_applications_from_another_la           760
+    ## 19 offers_to_applicants_from_another_la           197
+    ## 20               religious_denomination             3
+    ## 21                                  urn         24404
+    ## 22                              nc_year             3
 
 Let’s review the categorical values to ensure they are consistent and
 well labelled.
 
 ``` r
-# Review the unique values of time_period
-unique(offers$time_period)
+# Review the unique values of year
+unique(offers$year)
 ```
 
     ## [1] 202223 202122 202021 201920 201819 201718 201617 201516 201415
@@ -926,11 +763,11 @@ table. We need to extract the academic start year, which is the first 4
 digits of the value.
 
 ``` r
-# Recode the values in time_period
-offers$time_period <- as.numeric(str_extract(offers$time_period, "^\\d{4}"))
+# Recode the values in year
+offers$year <- as.numeric(str_extract(offers$year, "^\\d{4}"))
 
 # Check the results
-unique(offers$time_period)
+unique(offers$year)
 ```
 
     ## [1] 2022 2021 2020 2019 2018 2017 2016 2015 2014
@@ -939,7 +776,7 @@ All ok.
 
 ``` r
 # Review the unique values in denomination
-unique(offers$denomination)
+unique(offers$religious_denomination)
 ```
 
     ## [1] "Faith"                  "No religious character" "n/a"
@@ -949,26 +786,26 @@ There are some values of `n/a` here. Let’s see what those are.
 ``` r
 # Review the n/a values in denomination
 offers %>% 
-  filter(denomination == "n/a") %>% 
+  filter(religious_denomination == "n/a") %>% 
   head()
 ```
 
-    ## # A tibble: 6 × 23
-    ##   time_period region_c…¹ regio…² old_l…³ schoo…⁴ la_name numbe…⁵ total…⁶ numbe…⁷
-    ##         <dbl> <chr>      <chr>     <dbl>   <dbl> <chr>   <chr>     <dbl>   <dbl>
-    ## 1        2022 E12000009  South …     803 8032016 South … 3            61      61
-    ## 2        2022 E12000004  East M…     830 8302064 Derbys… 3            30      30
-    ## 3        2022 E12000009  South …     865 8652044 Wiltsh… 3            30      30
-    ## 4        2022 E12000009  South …     865 8652054 Wiltsh… 3            35      34
-    ## 5        2022 E12000009  South …     866 8662022 Swindon 3            59      59
-    ## 6        2022 E12000008  South …     867 8672002 Brackn… 3            30      30
-    ## # … with 14 more variables: number_1st_preference_offers <dbl>,
-    ## #   number_2nd_preference_offers <dbl>, number_3rd_preference_offers <dbl>,
+    ## # A tibble: 6 × 22
+    ##    year region…¹ regio…² la_code la_name numbe…³ total…⁴ numbe…⁵ numbe…⁶ numbe…⁷
+    ##   <dbl> <chr>    <chr>     <dbl> <chr>     <dbl>   <dbl>   <dbl>   <dbl>   <dbl>
+    ## 1  2022 E120000… South …     803 South …       3      61      61      61       0
+    ## 2  2022 E120000… East M…     830 Derbys…       3      30      30      29       1
+    ## 3  2022 E120000… South …     865 Wiltsh…       3      30      30      29       1
+    ## 4  2022 E120000… South …     865 Wiltsh…       3      35      34      32       2
+    ## 5  2022 E120000… South …     866 Swindon       3      59      59      58       1
+    ## 6  2022 E120000… South …     867 Brackn…       3      30      30      30       0
+    ## # … with 12 more variables: number_3rd_preference_offers <dbl>,
     ## #   times_put_as_any_preferred_school <dbl>, times_put_as_1st_preference <dbl>,
     ## #   times_put_as_2nd_preference <dbl>, times_put_as_3rd_preference <dbl>,
-    ## #   proportion_1stprefs_v_1stprefoffers <chr>,
-    ## #   proportion_1stprefs_v_totaloffers <chr>,
-    ## #   all_applications_from_another_la <dbl>, …
+    ## #   proportion_1stprefs_v_1stprefoffers <dbl>,
+    ## #   proportion_1stprefs_v_totaloffers <dbl>,
+    ## #   all_applications_from_another_la <dbl>,
+    ## #   offers_to_applicants_from_another_la <dbl>, religious_denomination <chr>, …
     ## # ℹ Use `colnames()` to see all variable names
 
 I guess this must be for schools who did not report their denomination.
@@ -976,10 +813,10 @@ Let’s replace `n/a` with `Not reported`.
 
 ``` r
 # Replace n/a
-offers$denomination[offers$denomination == "n/a"] <- "Not reported"
+offers$religious_denomination[offers$religious_denomination == "n/a"] <- "Not reported"
 
 # Check the results
-unique(offers$denomination)
+unique(offers$religious_denomination)
 ```
 
     ## [1] "Faith"                  "No religious character" "Not reported"
@@ -987,27 +824,13 @@ unique(offers$denomination)
 All ok.
 
 ``` r
-# Review the unique values in entry year
-unique(offers$entry_year)
+# Review the unique values in NC year
+unique(offers$nc_year)
 ```
 
     ## [1] "R" "7" "9"
 
 All ok.
-
-Finally, let’s rename the columns.
-
-``` r
-# Rename the columns
-offers <- offers %>% 
-  rename(year = time_period,
-         la_code = old_la_code,
-         laestab = school_laestab_as_used,
-         number_of_preferences = number_preferences_la,
-         religious_denomination = denomination,
-         urn = school_urn,
-         nc_year = entry_year)
-```
 
 ## Performance
 
@@ -1199,37 +1022,57 @@ star_schema %>%
 |:-------------|:-------------|:---------------------|:------------|
 | info         | la_code      | 891                  | dim_la      |
 | info         | la_name      | Nottinghamshire      | dim_la      |
+| info         | gss_la_code  | E10000024            | dim_la      |
 | offers       | region_code  | E13000001            | dim_la      |
 | offers       | region_name  | Inner London         | dim_la      |
 | offers       | la_code      | 201                  | dim_la      |
 | offers       | la_name      | City of London       | dim_la      |
 
-These columns can all come from the `offers` data frame.
+These columns can all come from the `offers` and `info` data frames.
 
 ``` r
 # Define columns to include
-dim_la_cols <- star_schema %>% 
-  filter(model_table == "dim_la") %>% 
+dim_la_cols_offers <- star_schema %>% 
+  filter(model_table == "dim_la",
+         source_table == "offers") %>% 
   pull(source_field)
 
-# Build out the local authority dimension table
-dim_la <- offers %>% 
-  select(all_of(dim_la_cols)) %>% 
+dim_la_cols_info <- star_schema %>% 
+  filter(model_table == "dim_la",
+         source_table == "info") %>% 
+  pull(source_field)
+
+# Define which rows from offers should be joined (as there can be more than
+# one record per URN)
+dim_la_offers <- offers %>% 
+  select(all_of(dim_la_cols_offers)) %>% 
   distinct()
+
+# Build out the local authority dimension table
+dim_la <- info %>% 
+  select(all_of(dim_la_cols_info)) %>% 
+  distinct() %>% 
+  group_by(la_code, la_name) %>% 
+  slice_min(gss_la_code) %>% 
+  ungroup() %>% 
+  full_join(dim_la_offers)
+
+# Replace NA in dim_la
+dim_la$gss_la_code[is.na(dim_la$gss_la_code)] <- "Not reported"
 
 # Check the result
 head(dim_la)
 ```
 
-    ## # A tibble: 6 × 4
-    ##   la_code la_name                region_code region_name 
-    ##     <dbl> <chr>                  <chr>       <chr>       
-    ## 1     201 City of London         E13000001   Inner London
-    ## 2     202 Camden                 E13000001   Inner London
-    ## 3     203 Greenwich              E13000002   Outer London
-    ## 4     204 Hackney                E13000001   Inner London
-    ## 5     205 Hammersmith and Fulham E13000001   Inner London
-    ## 6     206 Islington              E13000001   Inner London
+    ## # A tibble: 6 × 5
+    ##   la_code la_name                gss_la_code region_code region_name 
+    ##     <dbl> <chr>                  <chr>       <chr>       <chr>       
+    ## 1     201 City of London         E09000001   E13000001   Inner London
+    ## 2     202 Camden                 E09000007   E13000001   Inner London
+    ## 3     203 Greenwich              E09000011   E13000002   Outer London
+    ## 4     204 Hackney                E09000012   E13000001   Inner London
+    ## 5     205 Hammersmith and Fulham E09000013   E13000001   Inner London
+    ## 6     206 Islington              E09000019   E13000001   Inner London
 
 Note that `la_code` is not unique.
 
@@ -1240,14 +1083,16 @@ dim_la %>%
   filter(n > 1)
 ```
 
-    ## # A tibble: 5 × 2
+    ## # A tibble: 7 × 2
     ##   la_code     n
     ##     <dbl> <int>
     ## 1     203     2
     ## 2     801     2
     ## 3     810     2
     ## 4     839     2
-    ## 5     928     2
+    ## 5     840     2
+    ## 6     884     2
+    ## 7     928     2
 
 Let’s check if `la_name` is unique.
 
@@ -1275,6 +1120,7 @@ the `null` case, which we’ll call `Not reported`.
 dim_la_null <- tibble(la_key = 0,
                       la_code = 0,
                       la_name = "Not reported",
+                      gss_la_code = "Not reported",
                       region_code = "Not reported",
                       region_name = "Not reported")
 
@@ -1296,53 +1142,51 @@ star_schema %>%
   kable()
 ```
 
-| source_table | source_field                  | source_value_example                  | model_table |
-|:-------------|:------------------------------|:--------------------------------------|:------------|
-| info         | urn                           | 131560                                | dim_school  |
-| info         | establishment_number          | 3793                                  | dim_school  |
-| info         | establishment_name            | Blidworth Oaks Primary School         | dim_school  |
-| info         | establishment_type            | Community school                      | dim_school  |
-| info         | establishment_type_group_name | Local authority maintained schools    | dim_school  |
-| info         | establishment_status          | Open, but proposed to close           | dim_school  |
-| info         | open_date                     | 39173                                 | dim_school  |
-| info         | close_date                    | 44773                                 | dim_school  |
-| info         | education_phase               | Primary                               | dim_school  |
-| info         | statutory_low_age             | 2                                     | dim_school  |
-| info         | statutory_high_age            | 11                                    | dim_school  |
-| info         | gender                        | Mixed                                 | dim_school  |
-| info         | religious_character           | Does not apply                        | dim_school  |
-| info         | admissions_policy             | Not applicable                        | dim_school  |
-| info         | ofsted_last_insp              | 42913                                 | dim_school  |
-| info         | last_changed_date             | 44735                                 | dim_school  |
-| info         | street                        | Haywood Avenue                        | dim_school  |
-| info         | locality                      | Blidworth                             | dim_school  |
-| info         | address3                      | Blidworth Oaks Primary School         | dim_school  |
-| info         | town                          | Mansfield                             | dim_school  |
-| info         | county                        | Nottinghamshire                       | dim_school  |
-| info         | postcode                      | NG21 0RE                              | dim_school  |
-| info         | school_website                | www.blidworthoaks.co.uk               | dim_school  |
-| info         | telephone_num                 | 1623792348                            | dim_school  |
-| info         | head_title                    | Mr                                    | dim_school  |
-| info         | head_first_name               | Shaun                                 | dim_school  |
-| info         | head_last_name                | Walker                                | dim_school  |
-| info         | head_preferred_job_title      | Headteacher                           | dim_school  |
-| info         | gor                           | East Midlands                         | dim_school  |
-| info         | administrative_district       | Newark and Sherwood                   | dim_school  |
-| info         | administrative_ward           | Rainworth South & Blidworth           | dim_school  |
-| info         | parliamentary_constituency    | Sherwood                              | dim_school  |
-| info         | urban_rural_indicator         | (England/Wales) Rural town and fringe | dim_school  |
-| info         | gssla_code                    | E10000024                             | dim_school  |
-| info         | easting                       | 459277                                | dim_school  |
-| info         | northing                      | 356444                                | dim_school  |
-| info         | msoa                          | Newark and Sherwood 006               | dim_school  |
-| info         | lsoa                          | Newark and Sherwood 006B              | dim_school  |
-| info         | ofsted_rating                 | Good                                  | dim_school  |
-| info         | msoa_code                     | E02005898                             | dim_school  |
-| info         | lsoa_code                     | E01028298                             | dim_school  |
-| offers       | laestab                       | 2013614                               | dim_school  |
-| offers       | religious_denomination        | Faith                                 | dim_school  |
-| offers       | urn                           | 100000                                | dim_school  |
-| performance  | urn                           | 137157                                | dim_school  |
+| source_table | source_field               | source_value_example                  | model_table |
+|:-------------|:---------------------------|:--------------------------------------|:------------|
+| info         | urn                        | 131560                                | dim_school  |
+| info         | establishment_number       | 3793                                  | dim_school  |
+| info         | establishment_name         | Blidworth Oaks Primary School         | dim_school  |
+| info         | establishment_type         | Community school                      | dim_school  |
+| info         | establishment_type_group   | Local authority maintained schools    | dim_school  |
+| info         | establishment_status       | Open, but proposed to close           | dim_school  |
+| info         | open_date                  | 13604                                 | dim_school  |
+| info         | close_date                 | 19204                                 | dim_school  |
+| info         | education_phase            | Primary                               | dim_school  |
+| info         | statutory_low_age          | 2                                     | dim_school  |
+| info         | statutory_high_age         | 11                                    | dim_school  |
+| info         | gender                     | Mixed                                 | dim_school  |
+| info         | religious_character        | Does not apply                        | dim_school  |
+| info         | admissions_policy          | Not applicable                        | dim_school  |
+| info         | ofsted_last_insp           | 17344                                 | dim_school  |
+| info         | last_changed_date          | 19166                                 | dim_school  |
+| info         | street                     | Haywood Avenue                        | dim_school  |
+| info         | locality                   | Blidworth                             | dim_school  |
+| info         | address3                   | Blidworth Oaks Primary School         | dim_school  |
+| info         | town                       | Mansfield                             | dim_school  |
+| info         | county                     | Nottinghamshire                       | dim_school  |
+| info         | postcode                   | NG21 0RE                              | dim_school  |
+| info         | school_website             | www.blidworthoaks.co.uk               | dim_school  |
+| info         | telephone_num              | 1623792348                            | dim_school  |
+| info         | head_title                 | Mr                                    | dim_school  |
+| info         | head_first_name            | Shaun                                 | dim_school  |
+| info         | head_last_name             | Walker                                | dim_school  |
+| info         | head_preferred_job_title   | Headteacher                           | dim_school  |
+| info         | gor                        | East Midlands                         | dim_school  |
+| info         | administrative_district    | Newark and Sherwood                   | dim_school  |
+| info         | administrative_ward        | Rainworth South & Blidworth           | dim_school  |
+| info         | parliamentary_constituency | Sherwood                              | dim_school  |
+| info         | urban_rural_indicator      | (England/Wales) Rural town and fringe | dim_school  |
+| info         | easting                    | 459277                                | dim_school  |
+| info         | northing                   | 356444                                | dim_school  |
+| info         | msoa                       | Newark and Sherwood 006               | dim_school  |
+| info         | lsoa                       | Newark and Sherwood 006B              | dim_school  |
+| info         | ofsted_rating              | Good                                  | dim_school  |
+| info         | msoa_code                  | E02005898                             | dim_school  |
+| info         | lsoa_code                  | E01028298                             | dim_school  |
+| offers       | religious_denomination     | Faith                                 | dim_school  |
+| offers       | urn                        | 100000                                | dim_school  |
+| performance  | urn                        | 137157                                | dim_school  |
 
 These columns can all be found in the `info` and `offers` tables. We
 need to ensure that we include only the URNs in the `master_urn` column
@@ -1360,22 +1204,63 @@ dim_school_cols_offers <- star_schema %>%
          source_table == "offers") %>% 
   pull(source_field)
 
+# Define which rows from offers should be joined (as there can be more than
+# one record per URN)
+dim_school_offers <- offers %>% 
+  select(all_of(dim_school_cols_offers),
+         year,
+         nc_year) %>% 
+  distinct() %>% 
+  group_by(urn) %>% 
+  slice_max(year) %>%
+  slice_max(nc_year) %>% 
+  ungroup()
+
 # Build out the school dimension table
 dim_school <- brg_school %>% 
   select(urn = master_urn) %>% 
+  distinct() %>% 
   left_join(select(info,
                    all_of(dim_school_cols_info))) %>% 
-  left_join(select(offers,
-                   all_of(dim_school_cols_offers))) %>% 
-  distinct()
+  left_join(select(dim_school_offers,
+                   all_of(dim_school_cols_offers)))
 ```
 
-TODO: There are some duplicate URNs in dim_school.
+Let’s assign a unique key to each record, and add a record for the
+`null` case, which we’ll call `Not reported`.
 
-[^1]: Columns which have been detected as logical, or boolean, always
-    raise a small red flag for me. It can be an indicator that the
-    column is empty of data (i.e. all values are `NA`). In this case, it
-    looks like this is indeed what has happened, since running the
-    `unique()` function over any of these columns always returns just a
-    single value of `NA`. Therefore, I can safely exclude these columns
-    from my analysis since they contain no useful data.
+``` r
+# Specify the null value
+dim_school_null <- tibble(school_key = 0,
+                          urn = 0,
+                          establishment_number = 0,
+                          establishment_name = "Not reported",
+                          establishment_type = "Not reported",
+                          establishment_type_group = "Not reported",
+                          establishment_status = "Not reported",
+                          open_date = NA,
+                          close_date = NA,
+                          education_phase = "Not reported",
+                          statutory_low_age = NA,
+                          statutory_high_age = NA,
+                          gender = "Not reported",
+                          religious_character = "Not reported",
+                          admissions_policy = "Not reported",
+                          ofsted_last_insp = NA,
+                          last_changed_date = NA,
+                          gor = "Not reported",
+                          administrative_district = "Not reported",
+                          administrative_ward = "Not reported",
+                          parliamentary_constituency = "Not reported",
+                          urban_rural_indicator = "Not reported",
+                          msoa_code = "Not reported",
+                          lsoa_code = "Not reported",
+                          ofsted_rating = "Not reported",
+                          religious_denomination = "Not reported")
+
+# Assign a key and row for null values
+dim_school <- dim_school %>% 
+  rowid_to_column(var = "school_key") %>% 
+  bind_rows(dim_school_null) %>% 
+  arrange(school_key)
+```

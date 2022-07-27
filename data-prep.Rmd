@@ -64,14 +64,7 @@ src_info_path <- "https://drive.google.com/file/d/1kUqKvphHnh4M-NfP4gXLAr9MxdxoW
 src_info <- read_csv_gdrive(src_info_path)
 ```
 
-```{r info-glimpse}
-# List the columns and data types in the data frame
-glimpse(src_info)
-```
-
-This data frame has `r nrow(src_info)` rows and `r ncol(src_info)` columns. The columns are a mix of character, numeric and logical[^1] data types. The columns include some identifiers for time, geography and school, some descriptive dimensions about each school and some measures relating to the number of pupils of different types. Each row represents a single school and the data represents the latest available.
-
-[^1]: Columns which have been detected as logical, or boolean, always raise a small red flag for me. It can be an indicator that the column is empty of data (i.e. all values are `NA`). In this case, it looks like this is indeed what has happened, since running the `unique()` function over any of these columns always returns just a single value of `NA`. Therefore, I can safely exclude these columns from my analysis since they contain no useful data.
+This data frame has `r nrow(src_info)` rows and `r ncol(src_info)` columns. The columns include some identifiers for time, geography and school, some descriptive dimensions about each school and some measures relating to the number of pupils of different types. Each row represents a single school and the data represents the latest available.
 
 ## Offers
 
@@ -81,11 +74,6 @@ This file contains data relating to the number of offers made to applicants for 
 # Read in the source data for offers
 src_offers_path <- "https://drive.google.com/file/d/1bG0a0WRg-LEnASl6M3J0qyHJA_cMY1CQ/view?usp=sharing"
 src_offers <- read_csv_gdrive(src_offers_path)
-```
-
-```{r offers-glimpse}
-# List the columns and data types in the data frame
-glimpse(src_offers)
 ```
 
 From the code outputs above, we can see that this data frame has `r nrow(src_offers)` rows and `r ncol(src_offers)` columns (a mix of character and numeric data types). The columns include some identifiers for time, geography and school, some descriptive dimensions for the number of preferences and type of school and some measures relating to the number of applications and offers made. Each row represents a single school for a single academic year.
@@ -143,11 +131,6 @@ src_intake_path <- "https://drive.google.com/file/d/1ASiYEbIbXg7VVNnkz3N1Cg1lHNq
 src_intake <- read_csv_gdrive(src_intake_path)
 ```
 
-```{r intake-glimpse}
-# List the columns and data types in the data frame
-glimpse(src_intake)
-```
-
 This dataset has `r nrow(src_intake)` rows and `r ncol(src_intake)` columns and contains largely descriptive information about the academic year groups in England.
 
 ## Calendar
@@ -160,11 +143,6 @@ src_calendar_path <- "https://drive.google.com/file/d/1el2cL02nQidzN1pMcZ7AUb3h6
 src_calendar <- read_csv_gdrive(src_calendar_path)
 ```
 
-```{r calendar-glimpse}
-# List the columns and data types in the data frame
-glimpse(src_calendar)
-```
-
 This will be our date table. Since the lowest unit of time in the data is year, this is the level of detail of the calendar table. This table has `r nrow(src_calendar)` rows and `r ncol(src_calendar)` columns.
 
 # Clean data
@@ -175,7 +153,7 @@ One key piece of cleaning we need to do with this dataset is to provide a mechan
 
 ```{r bridge-school-unfiltered}
 # Set up the bridge table
-brg_school_unfiltered <- src_info %>%
+brg_school <- src_info %>%
   # select required columns
   select(master_urn = urn,
          status = establishment_status_name,
@@ -196,14 +174,14 @@ At this point, we can stop and check what are the unique values of the `link_typ
 
 ```{r bridge-link-types}
 # What are the unique values of link_type
-unique(brg_school_unfiltered$link_type)
+unique(brg_school$link_type)
 ```
 
 The links I am interested in are the predecessor-successor links so that I can keep schools grouped over time. I want the successor school to be retained as the master school and all predecessors to be linked to the master. If a school has no links then we simply list the master and linked URNs as the same number. Therefore, I need to keep all of the open schools as the master list and any predecessors need to be linked to those master URNs.
 
 ```{r bridge-school}
 # Filter the table
-brg_school <- brg_school_unfiltered %>% 
+brg_school <- brg_school %>% 
   # add self-urn
   mutate(self_urn = master_urn) %>% 
   pivot_longer(cols = c(linked_urn, self_urn),
@@ -256,6 +234,48 @@ info <- info %>%
          msoa_code:fsm)
 ```
 
+Now we can rename the columns more appropriately.
+
+```{r info-rename}
+# Rename columns in info
+info <- info %>% 
+  rename(establishment_type = type_of_establishment_name,
+         establishment_type_group = establishment_type_group_name,
+         establishment_status = establishment_status_name,
+         education_phase = phase_of_education_name,
+         gender = gender_name,
+         religious_character = religious_character_name,
+         admissions_policy = admissions_policy_name,
+         county = county_name,
+         head_title = head_title_name,
+         gor = gor_name,
+         administrative_district = district_administrative_name,
+         administrative_ward = administrative_ward_name,
+         parliamentary_constituency = parliamentary_constituency_name,
+         urban_rural_indicator = urban_rural_name,
+         gss_la_code = gssla_code_name,
+         msoa = msoa_name,
+         lsoa = lsoa_name,
+         ofsted_rating = ofsted_rating_name,
+         number_of_fsm = fsm)
+```
+
+And convert the columns to the correct data types.
+
+```{r info-type}
+# Define the columns by type
+info_date <- c("open_date",
+               "close_date",
+               "ofsted_last_insp",
+               "last_changed_date")
+
+# Correct the data types in info
+info <- info %>% 
+  mutate(across(all_of(info_date), dmy)) %>% 
+  mutate(telephone_num = as.character(telephone_num),
+         telephone_num = paste0("0", telephone_num))
+```
+
 Let's now review the selected column headings in this dataset and the number of unique values in each column
 
 ```{r info-unique-values}
@@ -270,88 +290,88 @@ Some columns have relatively few unique values, making these columns clearly cat
 
 ```{r info-review-establishment-type}
 # Review the unique values in establishment type
-unique(info$type_of_establishment_name)
+unique(info$establishment_type)
 ```
 
 These values all look ok. [This page](https://www.leicester.gov.uk/schools-and-learning/school-and-colleges/school-admissions/understanding-the-different-types-of-school/) has some useful definitions of the different types of school.
 
 ```{r info-review-establishment-group}
 # Review the unique values in establishment group
-unique(info$establishment_type_group_name)
+unique(info$establishment_type_group)
 ```
 
 All ok.
 
 ```{r info-review-status}
 # Review the unique values in establishment status
-unique(info$establishment_status_name)
+unique(info$establishment_status)
 ```
 
 All ok.
 
 ```{r info-review-phase}
 # Review the unique values in phase of education
-unique(info$phase_of_education_name)
+unique(info$education_phase)
 ```
 
 All ok.
 
 ```{r info-review-gender}
 # Review the unique values in gender
-unique(info$gender_name)
+unique(info$gender)
 ```
 
 Some missing values here. Let's replace those with 'Not reported'.
 
 ```{r info-recode-gender}
 # Convert missing values in gender
-info$gender_name[is.na(info$gender_name)] <- "Not reported"
+info$gender[is.na(info$gender)] <- "Not reported"
 
 # Check the results
-unique(info$gender_name)
+unique(info$gender)
 ```
 
 All ok.
 
 ```{r info-review-religious-character}
 # Review the unique values in religious character
-unique(info$religious_character_name)
+unique(info$religious_character)
 ```
 
 Again, let's fix the missing values.
 
 ```{r info-recode-religious-character}
 # Convert missing values in religious character
-info$religious_character_name[is.na(info$religious_character_name)] <- 
+info$religious_character[is.na(info$religious_character)] <- 
   "Not reported"
 
 # Check the results
-unique(info$religious_character_name)
+unique(info$religious_character)
 ```
 
 All ok.
 
 ```{r info-review-admissions-policy}
 # Review the unique values in admissions policy
-unique(info$admissions_policy_name)
+unique(info$admissions_policy)
 ```
 
 Again let's fix the missing values.
 
 ```{r info-recode-admissions-policy}
 # Convert missing values in admissions policy
-info$admissions_policy_name[is.na(info$admissions_policy_name)] <- 
+info$admissions_policy[is.na(info$admissions_policy)] <- 
   "Not reported"
 
 # Check the results
-unique(info$admissions_policy_name)
+unique(info$admissions_policy)
 ```
 
 All ok.
 
 ```{r info-review-ofsted}
 # Review the unique values in ofsted rating
-unique(info$ofsted_rating_name)
+unique(info$ofsted_rating)
 ```
 
 Some recoding is necessary here. According to [Ofsted](https://www.gov.uk/government/publications/education-inspection-framework/education-inspection-framework), school inspections use a 4-point grading scale:
@@ -366,47 +386,22 @@ In our dataset, I see some other values of `Serious Weaknesses` and `Special Mea
 ```{r info-recode-ofsted}
 # Fix values for ofsted rating
 info <- info %>% 
-    mutate(ofsted_rating_name = case_when(
-      grepl("Weakness", ofsted_rating_name) ~ "Inadequate",
-      grepl("Measures", ofsted_rating_name) ~ "Inadequate",
-      is.na(ofsted_rating_name) ~ "Not reported",
-      TRUE ~ ofsted_rating_name
+    mutate(ofsted_rating = case_when(
+      grepl("Weakness", ofsted_rating) ~ "Inadequate",
+      grepl("Measures", ofsted_rating) ~ "Inadequate",
+      is.na(ofsted_rating) ~ "Not reported",
+      TRUE ~ ofsted_rating
     ),
     ofsted_rating_score = case_when(
-    grepl("Outstanding", ofsted_rating_name) ~ 1,
-    grepl("Good", ofsted_rating_name) ~ 2,
-    grepl("improvement", ofsted_rating_name) ~ 3,
-    grepl("Inadequate", ofsted_rating_name) ~ 4
+    grepl("Outstanding", ofsted_rating) ~ 1,
+    grepl("Good", ofsted_rating) ~ 2,
+    grepl("improvement", ofsted_rating) ~ 3,
+    grepl("Inadequate", ofsted_rating) ~ 4
   ))
 
 # Check results
-unique(info$ofsted_rating_name)
+unique(info$ofsted_rating)
 unique(info$ofsted_rating_score)
-```
-
-Finally, let's rename the columns in `info` to suit this analysis better.
-
-```{r info-rename}
-# Rename columns in info
-info <- info %>% 
-  rename(establishment_type = type_of_establishment_name,
-         establishment_status = establishment_status_name,
-         education_phase = phase_of_education_name,
-         gender = gender_name,
-         religious_character = religious_character_name,
-         admissions_policy = admissions_policy_name,
-         county = county_name,
-         head_title = head_title_name,
-         gor = gor_name,
-         administrative_district = district_administrative_name,
-         administrative_ward = administrative_ward_name,
-         parliamentary_constituency = parliamentary_constituency_name,
-         urban_rural_indicator = urban_rural_name,
-         gssla_code = gssla_code_name,
-         msoa = msoa_name,
-         lsoa = lsoa_name,
-         ofsted_rating = ofsted_rating_name,
-         number_of_fsm = fsm)
 ```
 
 ## Offers
@@ -420,7 +415,6 @@ offers <- src_offers %>%
          region_code,
          region_name,
          old_la_code,
-         school_laestab_as_used,
          la_name,
          number_preferences_la,
          total_number_places_offered:offers_to_applicants_from_another_la,
@@ -429,13 +423,40 @@ offers <- src_offers %>%
          entry_year)
 ```
 
+Next we can rename the columns more appropriately.
+
+```{r offers-rename}
+# Rename the columns
+offers <- offers %>% 
+  rename(year = time_period,
+         la_code = old_la_code,
+         number_of_preferences = number_preferences_la,
+         religious_denomination = denomination,
+         urn = school_urn,
+         nc_year = entry_year)
+```
+
 Next we can filter out any records where the `school_urn` is `n/a` and convert the remaining values to numeric.
 
 ```{r offers-filter}
 # Remove entries with null URN
 offers <- offers %>% 
-  filter(school_urn != "n/a") %>% 
-  mutate(school_urn = as.numeric(school_urn))
+  filter(urn != "n/a") %>% 
+  mutate(urn = as.numeric(urn))
+```
+
+Now we can check and correct the data types.
+
+```{r offers-type}
+# Define cols to be converted
+offers_num <- c("number_of_preferences",
+                "proportion_1stprefs_v_1stprefoffers",
+                "proportion_1stprefs_v_totaloffers",
+                "offers_to_applicants_from_another_la")
+
+# Correct data types in offers
+offers <- offers %>% 
+  mutate(across(all_of(offers_num), as.numeric))
 ```
 
 Let's now review the selected column headings in this dataset and the number of unique values in each column
@@ -450,26 +471,26 @@ offers %>%
 
 Let's review the categorical values to ensure they are consistent and well labelled.
 
-```{r offers-review-time-period}
-# Review the unique values of time_period
-unique(offers$time_period)
+```{r offers-review-year}
+# Review the unique values of year
+unique(offers$year)
 ```
 
 These values should be recoded to match the `year_key` in the calendar table. We need to extract the academic start year, which is the first 4 digits of the value.
 
-```{r offers-recode-time-period}
-# Recode the values in time_period
-offers$time_period <- as.numeric(str_extract(offers$time_period, "^\\d{4}"))
+```{r offers-recode-year}
+# Recode the values in year
+offers$year <- as.numeric(str_extract(offers$year, "^\\d{4}"))
 
 # Check the results
-unique(offers$time_period)
+unique(offers$year)
 ```
 
 All ok.
 
 ```{r offers-review-denomination}
 # Review the unique values in denomination
-unique(offers$denomination)
+unique(offers$religious_denomination)
 ```
 
 There are some values of `n/a` here. Let's see what those are.
@@ -477,7 +498,7 @@ There are some values of `n/a` here. Let's see what those are.
 ```{r offers-denomination-na}
 # Review the n/a values in denomination
 offers %>% 
-  filter(denomination == "n/a") %>% 
+  filter(religious_denomination == "n/a") %>% 
   head()
 ```
 
@@ -485,34 +506,20 @@ I guess this must be for schools who did not report their denomination. Let's re
 
 ```{r offers-denomination-replace-na}
 # Replace n/a
-offers$denomination[offers$denomination == "n/a"] <- "Not reported"
+offers$religious_denomination[offers$religious_denomination == "n/a"] <- "Not reported"
 
 # Check the results
-unique(offers$denomination)
+unique(offers$religious_denomination)
 ```
 
 All ok.
 
-```{r offers-review-entry-year}
-# Review the unique values in entry year
-unique(offers$entry_year)
+```{r offers-review-nc-year}
+# Review the unique values in NC year
+unique(offers$nc_year)
 ```
 
 All ok.
-
-Finally, let's rename the columns.
-
-```{r offers-rename}
-# Rename the columns
-offers <- offers %>% 
-  rename(year = time_period,
-         la_code = old_la_code,
-         laestab = school_laestab_as_used,
-         number_of_preferences = number_preferences_la,
-         religious_denomination = denomination,
-         urn = school_urn,
-         nc_year = entry_year)
-```
 
 ## Performance
 
@@ -648,18 +655,37 @@ star_schema %>%
   kable()
 ```
 
-These columns can all come from the `offers` data frame.
+These columns can all come from the `offers` and `info` data frames.
 
 ```{r dim-la-build}
 # Define columns to include
-dim_la_cols <- star_schema %>% 
-  filter(model_table == "dim_la") %>% 
+dim_la_cols_offers <- star_schema %>% 
+  filter(model_table == "dim_la",
+         source_table == "offers") %>% 
   pull(source_field)
 
-# Build out the local authority dimension table
-dim_la <- offers %>% 
-  select(all_of(dim_la_cols)) %>% 
+dim_la_cols_info <- star_schema %>% 
+  filter(model_table == "dim_la",
+         source_table == "info") %>% 
+  pull(source_field)
+
+# Define which rows from offers should be joined (as there can be more than
+# one record per URN)
+dim_la_offers <- offers %>% 
+  select(all_of(dim_la_cols_offers)) %>% 
   distinct()
+
+# Build out the local authority dimension table
+dim_la <- info %>% 
+  select(all_of(dim_la_cols_info)) %>% 
+  distinct() %>% 
+  group_by(la_code, la_name) %>% 
+  slice_min(gss_la_code) %>% 
+  ungroup() %>% 
+  full_join(dim_la_offers)
+
+# Replace NA in dim_la
+dim_la$gss_la_code[is.na(dim_la$gss_la_code)] <- "Not reported"
 
 # Check the result
 head(dim_la)
@@ -690,6 +716,7 @@ This means that, over time, some codes have been recycled and used for different
 dim_la_null <- tibble(la_key = 0,
                       la_code = 0,
                       la_name = "Not reported",
+                      gss_la_code = "Not reported",
                       region_code = "Not reported",
                       region_name = "Not reported")
 
@@ -725,14 +752,62 @@ dim_school_cols_offers <- star_schema %>%
          source_table == "offers") %>% 
   pull(source_field)
 
+# Define which rows from offers should be joined (as there can be more than
+# one record per URN)
+dim_school_offers <- offers %>% 
+  select(all_of(dim_school_cols_offers),
+         year,
+         nc_year) %>% 
+  distinct() %>% 
+  group_by(urn) %>% 
+  slice_max(year) %>%
+  slice_max(nc_year) %>% 
+  ungroup()
+
 # Build out the school dimension table
 dim_school <- brg_school %>% 
   select(urn = master_urn) %>% 
+  distinct() %>% 
   left_join(select(info,
                    all_of(dim_school_cols_info))) %>% 
-  left_join(select(offers,
-                   all_of(dim_school_cols_offers))) %>% 
-  distinct()
+  left_join(select(dim_school_offers,
+                   all_of(dim_school_cols_offers)))
 ```
 
-TODO: There are some duplicate URNs in dim_school.
+Let's assign a unique key to each record, and add a record for the `null` case, which we'll call `Not reported`.
+
+```{r dim-school-key}
+# Specify the null value
+dim_school_null <- tibble(school_key = 0,
+                          urn = 0,
+                          establishment_number = 0,
+                          establishment_name = "Not reported",
+                          establishment_type = "Not reported",
+                          establishment_type_group = "Not reported",
+                          establishment_status = "Not reported",
+                          open_date = NA,
+                          close_date = NA,
+                          education_phase = "Not reported",
+                          statutory_low_age = NA,
+                          statutory_high_age = NA,
+                          gender = "Not reported",
+                          religious_character = "Not reported",
+                          admissions_policy = "Not reported",
+                          ofsted_last_insp = NA,
+                          last_changed_date = NA,
+                          gor = "Not reported",
+                          administrative_district = "Not reported",
+                          administrative_ward = "Not reported",
+                          parliamentary_constituency = "Not reported",
+                          urban_rural_indicator = "Not reported",
+                          msoa_code = "Not reported",
+                          lsoa_code = "Not reported",
+                          ofsted_rating = "Not reported",
+                          religious_denomination = "Not reported")
+
+# Assign a key and row for null values
+dim_school <- dim_school %>% 
+  rowid_to_column(var = "school_key") %>% 
+  bind_rows(dim_school_null) %>% 
+  arrange(school_key)
+```
