@@ -121,17 +121,17 @@ src_perf_1819ks4 <- read_csv_gdrive(src_perf_1819ks4_path)
 
 These files contain a large number of columns. We will need to pick out only the most relevant for reporting, which can be standardised across all schools.
 
-## Intake
+## Phase
 
-This dataset includes details about the year groups that schools are divided into in England. The data is aggregated by year group.
+This dataset includes details about the educational phase. Since there are some schools in England that offer both primary and secondary education, we will need a way to distinguish the phases in the fact table.
 
-```{r intake-read}
-# Read in the source data for intake
-src_intake_path <- "https://drive.google.com/file/d/1ASiYEbIbXg7VVNnkz3N1Cg1lHNqDxMiQ/view?usp=sharing"
-src_intake <- read_csv_gdrive(src_intake_path)
+```{r phase-read}
+# Read in the source data for phase
+src_phase_path <- "https://drive.google.com/file/d/1I9Ibo-hG_VzXvzNgOVMi6PPYfSCuJzgG/view?usp=sharing"
+src_phase <- read_csv_gdrive(src_phase_path)
 ```
 
-This dataset has `r nrow(src_intake)` rows and `r ncol(src_intake)` columns and contains largely descriptive information about the academic year groups in England.
+This dataset has `r nrow(src_phase)` rows and `r ncol(src_phase)` columns and contains largely descriptive information about the educational phases in England.
 
 ## Calendar
 
@@ -433,7 +433,7 @@ offers <- offers %>%
          number_of_preferences = number_preferences_la,
          religious_denomination = denomination,
          urn = school_urn,
-         nc_year = entry_year)
+         phase = entry_year)
 ```
 
 Next we can filter out any records where the `school_urn` is `n/a` and convert the remaining values to numeric.
@@ -514,12 +514,25 @@ unique(offers$religious_denomination)
 
 All ok.
 
-```{r offers-review-nc-year}
-# Review the unique values in NC year
-unique(offers$nc_year)
+```{r offers-review-phase}
+# Review the unique values in phase
+unique(offers$phase)
 ```
 
-All ok.
+Here we need to make some changes so that this column can be used to refer to the educational phase of the data. We need to recode these values to match the phases in our phase table (primary or secondary). The value `R` corresponds to primary and `7` and `9` both correspond to secondary.
+
+```{r offers-record-phase}
+# Recode the phase values
+offers <- offers %>% 
+  mutate(phase = case_when(
+    phase == "R" ~ "Primary",
+    phase %in% c("7", "9") ~ "Secondary",
+    TRUE ~ phase
+  ))
+
+# Check the results
+unique(offers$phase)
+```
 
 ## Performance
 
@@ -594,13 +607,13 @@ performance <- perf_ks2 %>%
 head(performance)
 ```
 
-## Intake
+## Phase
 
 No cleaning required. We can simply rename without the `src_` prefix.
 
-```{r intake-clean}
+```{r phase-clean}
 # Rename the variable
-intake <- src_intake
+phase <- src_phase
 ```
 
 ## Calendar
@@ -614,7 +627,13 @@ calendar <- src_calendar
 
 # Model data
 
-The matrix below shows the fact and dimension tables that I intend to create for this model and the relationships between them. ![bus-matrix-for-school-admissions-dashboard](images/bus-matrix.png)
+The matrix below shows the fact and dimension tables that I intend to create for this model and the relationships between them.
+
+| Fact/Dimension   | dim_la | dim_school | dim_calendar | dim_phase |
+|------------------|:------:|:----------:|:------------:|:---------:|
+| fact_school_year |   x    |     x      |      x       |     x     |
+
+: Fact and dimension tables
 
 To build out the dimensional model for this data, we need to review all of the columns we intend to use, so that we can determine where they fit in the model. The custom function `describe_df()` contained in the `utils.R` file can help us with this.
 
@@ -623,7 +642,7 @@ To build out the dimensional model for this data, we need to review all of the c
 data <- list("info" = info,
              "offers" = offers,
              "performance" = performance,
-             "intake" = intake,
+             "phase" = phase,
              "calendar" = calendar)
 
 # Run describe_df() over each df
@@ -757,11 +776,11 @@ dim_school_cols_offers <- star_schema %>%
 dim_school_offers <- offers %>% 
   select(all_of(dim_school_cols_offers),
          year,
-         nc_year) %>% 
+         phase) %>% 
   distinct() %>% 
   group_by(urn) %>% 
   slice_max(year) %>%
-  slice_max(nc_year) %>% 
+  slice_max(phase) %>% 
   ungroup()
 
 # Build out the school dimension table
@@ -810,4 +829,42 @@ dim_school <- dim_school %>%
   rowid_to_column(var = "school_key") %>% 
   bind_rows(dim_school_null) %>% 
   arrange(school_key)
+```
+
+### Phase
+
+The following columns are needed for the phase dimension:
+
+```{r dim-phase-cols}
+# Which columns are needed for the phase dimension?
+star_schema %>% 
+  filter(model_table == "dim_phase") %>% 
+  kable()
+```
+
+For this table we just need to use the `phase` data frame as it already exists.
+
+```{r dim-phase-build}
+# Build the dim_phase table
+dim_phase <- phase
+```
+
+### Calendar
+
+For this table we just need to use the `calendar` data frame as it already exists.
+
+```{r dim-calendar-build}
+# Build the calendar dimension
+dim_calendar <- calendar
+```
+
+## Facts
+
+To build the fact table we will need to following columns, plus keys for all dimensions:
+
+```{r fact-cols}
+# Which columns are needed for the fact table?
+star_schema %>% 
+  filter(model_table == "fact_school_year") %>% 
+  kable()
 ```
