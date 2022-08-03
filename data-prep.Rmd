@@ -194,7 +194,8 @@ brg_school <- brg_school %>%
                ignore.case = TRUE)) %>% 
   # select required columns
   select(master_urn,
-         linked_urn)
+         linked_urn) %>% 
+  distinct()
 ```
 
 Now that the bridge table is set up I can filter the `src_info` table to include only the currently open schools. The number of distinct URNs in this table should then match the number of distinct master URNs in `brg_school`.
@@ -632,6 +633,7 @@ The matrix below shows the fact and dimension tables that I intend to create for
 | Fact/Dimension   | dim_la | dim_school | dim_calendar | dim_phase |
 |------------------|:------:|:----------:|:------------:|:---------:|
 | fact_school_year |   x    |     x      |      x       |     x     |
+| fact_school      |   x    |     x      |              |           |
 
 : Fact and dimension tables
 
@@ -860,11 +862,67 @@ dim_calendar <- calendar
 
 ## Facts
 
-To build the fact table we will need to following columns, plus keys for all dimensions:
+### School Facts
 
-```{r fact-cols}
-# Which columns are needed for the fact table?
+To build the school facts table we will need to following columns, plus keys for all dimensions:
+
+```{r school-fact-cols}
+# Which columns are needed for the school fact table?
+star_schema %>% 
+  filter(model_table == "fact_school") %>% 
+  kable()
+```
+
+These fields can all come from the `info` table.
+
+```{r school-fact-build}
+# Define columns to include
+fct_school_cols <- star_schema %>% 
+  filter(model_table == "fact_school",
+         source_table == "info") %>% 
+  pull(source_field)
+
+# Build out the school fact table
+fct_school <- info %>% 
+  # select columns
+  select(linked_urn = urn,
+         la_code,
+         la_name,
+         all_of(fct_school_cols)) %>% 
+  # join school key (via bridge)
+  left_join(brg_school) %>% 
+  left_join(select(dim_school,
+                   master_urn = urn,
+                   school_key)) %>% 
+  # join la key
+  left_join(select(dim_la,
+                   la_code,
+                   la_name,
+                   la_key)) %>% 
+  # select final columns
+  select(school_key,
+         la_key,
+         all_of(fct_school_cols))
+```
+
+### School Year Facts
+
+To build the school year facts table we need the following columns:
+
+```{r school-year-fact-cols}
+# Which columns are needed for the school year fact table?
 star_schema %>% 
   filter(model_table == "fact_school_year") %>% 
   kable()
+```
+
+These columns all come from `offers` and `performance`.
+
+```{r build-fact-school-year}
+# Define columns to include
+fct_school_year_cols_offers <- offers %>% 
+  select(urn,
+         la_code,
+         la_name,
+         )
 ```
