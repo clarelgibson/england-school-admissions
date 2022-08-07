@@ -563,7 +563,9 @@ perf_ks2 <- bind_rows(
          writprog,
          matprog) %>% 
   # convert to numeric (any strings can be converted to NA)
-  mutate(across(everything(), as.numeric))
+  mutate(across(everything(), as.numeric)) %>% 
+  # add a column for phase
+  mutate(phase = "Primary")
 
 # View the head
 head(perf_ks2)
@@ -586,7 +588,9 @@ perf_ks4 <- bind_rows(
          p8mea,
          att8scr) %>% 
   # convert to numeric (any strings can be converted to NA)
-  mutate(across(everything(), as.numeric))
+  mutate(across(everything(), as.numeric)) %>% 
+  # add the phase
+  mutate(phase = "Secondary")
 
 # View the head
 head(perf_ks4)
@@ -875,6 +879,24 @@ star_schema %>%
 
 These fields can all come from the `info` table.
 
+\# Build out the school fact table
+
+fct_school \<- info %\>%
+
+\# select columns
+
+select(linked_urn = urn,
+
+la_code,
+
+la_name,
+
+all_of(fct_school_cols)) %\>%
+
+\# join school key (via bridge)
+
+left_join(brg_school)
+
 ```{r school-fact-build}
 # Define columns to include
 fct_school_cols <- star_schema %>% 
@@ -920,9 +942,48 @@ These columns all come from `offers` and `performance`.
 
 ```{r build-fact-school-year}
 # Define columns to include
-fct_school_year_cols_offers <- offers %>% 
-  select(urn,
+fct_school_year_cols_offers <- star_schema %>% 
+  filter(model_table == "fact_school_year",
+         source_table == "offers") %>% 
+  pull(source_field)
+
+fct_school_year_cols_perf <- star_schema %>% 
+  filter(model_table == "fact_school_year",
+         source_table == "performance") %>% 
+  pull(source_field)
+
+# Build out the school year fact table
+fct_school_year <- offers %>% 
+  select(linked_urn = urn,
          la_code,
          la_name,
-         )
+         year,
+         phase_name = phase,
+         all_of(fct_school_year_cols_offers)) %>% 
+  left_join(select(performance,
+                   linked_urn = urn,
+                   year,
+                   phase_name = phase,
+                   all_of(fct_school_year_cols_perf))) %>% 
+  # join school key (via bridge)
+  left_join(brg_school) %>% 
+  left_join(select(dim_school,
+                   master_urn = urn,
+                   school_key)) %>% 
+  # join la key
+  left_join(select(dim_la,
+                   la_code,
+                   la_name,
+                   la_key)) %>% 
+  # join phase key
+  left_join(select(dim_phase,
+                   phase_name,
+                   phase_key)) %>% 
+  # select final columns
+  select(school_key,
+         la_key,
+         year_key = year,
+         phase_key,
+         all_of(fct_school_year_cols_offers),
+         all_of(fct_school_year_cols_perf))
 ```
