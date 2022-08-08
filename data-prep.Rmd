@@ -151,9 +151,13 @@ This will be our date table. Since the lowest unit of time in the data is year, 
 
 One key piece of cleaning we need to do with this dataset is to provide a mechanism to group entities that describe the same establishment (i.e. where there has been a change in URN over time due to conversion to academy). We can do this using the `links` columns at the end of this data frame, along with the `urn`, to create a bridge table, which we'll call `brg_school`.
 
-```{r bridge-school-unfiltered}
+The links I am interested in are the predecessor-successor links so that I can keep schools grouped over time. I want the successor school to be retained as the master school and all predecessors to be linked to the master. If a school has no links then we simply list the master and linked URNs as the same number. Therefore, I need to keep all of the open schools as the master list and any predecessors need to be linked to those master URNs.
+
+```{r bridge-school}
 # Set up the bridge table
-brg_school_prep <- src_info %>%
+brg_school <- src_info %>%
+  # keep only currently open schools
+  filter(grepl("^Open.*", establishment_status_name)) %>%
   # select required columns
   select(master_urn = urn,
          status = establishment_status_name,
@@ -163,35 +167,23 @@ brg_school_prep <- src_info %>%
                values_drop_na = TRUE) %>% 
   # drop the name column
   select(-name) %>% 
+  # drop the non-useful link types
+  mutate(value = case_when(
+    value == "Does not have links" ~ value,
+    grepl(".*Predecessor.*", value) ~ value,
+    TRUE ~ "No useful links"
+  )) %>% 
   # split the description column into useful data
   mutate(linked_urn = as.numeric(str_extract(value,"\\d+")),
          link_type = str_trim(str_extract(value,"\\D+"))) %>% 
   # drop the value column
-  select(-value)
-```
-
-At this point, we can stop and check what are the unique values of the `link_type` column?
-
-```{r bridge-link-types}
-# What are the unique values of link_type
-unique(brg_school_prep$link_type)
-```
-
-The links I am interested in are the predecessor-successor links so that I can keep schools grouped over time. I want the successor school to be retained as the master school and all predecessors to be linked to the master. If a school has no links then we simply list the master and linked URNs as the same number. Therefore, I need to keep all of the open schools as the master list and any predecessors need to be linked to those master URNs.
-
-```{r bridge-school}
-# Filter the table
-brg_school <- brg_school_prep %>% 
+  select(-value) %>% 
   # add self-urn
   mutate(self_urn = master_urn) %>% 
   pivot_longer(cols = c(linked_urn, self_urn),
                names_to = "urn_type",
                values_to = "linked_urn",
                values_drop_na = TRUE) %>% 
-  # keep only currently open schools
-  filter(grepl("^Open.*",
-               status,
-               ignore.case = TRUE)) %>% 
   # select required columns
   select(master_urn,
          linked_urn) %>% 
@@ -881,21 +873,6 @@ These fields can all come from the `info` table.
 
 \# Build out the school fact table
 
-fct_school \<- info %\>%
-
-\# select columns
-
-select(linked_urn = urn,
-
-la_code,
-
-la_name,
-
-all_of(fct_school_cols)) %\>%
-
-\# join school key (via bridge)
-
-left_join(brg_school)
 
 ```{r school-fact-build}
 # Define columns to include
