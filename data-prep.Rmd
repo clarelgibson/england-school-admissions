@@ -153,7 +153,7 @@ One key piece of cleaning we need to do with this dataset is to provide a mechan
 
 ```{r bridge-school-unfiltered}
 # Set up the bridge table
-brg_school <- src_info %>%
+brg_school_prep <- src_info %>%
   # select required columns
   select(master_urn = urn,
          status = establishment_status_name,
@@ -174,14 +174,14 @@ At this point, we can stop and check what are the unique values of the `link_typ
 
 ```{r bridge-link-types}
 # What are the unique values of link_type
-unique(brg_school$link_type)
+unique(brg_school_prep$link_type)
 ```
 
 The links I am interested in are the predecessor-successor links so that I can keep schools grouped over time. I want the successor school to be retained as the master school and all predecessors to be linked to the master. If a school has no links then we simply list the master and linked URNs as the same number. Therefore, I need to keep all of the open schools as the master list and any predecessors need to be linked to those master URNs.
 
 ```{r bridge-school}
 # Filter the table
-brg_school <- brg_school %>% 
+brg_school <- brg_school_prep %>% 
   # add self-urn
   mutate(self_urn = master_urn) %>% 
   pivot_longer(cols = c(linked_urn, self_urn),
