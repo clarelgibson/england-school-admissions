@@ -29,8 +29,12 @@ describe_df <- function(df) {
   # and an example of one of the values stored within each column
   require(data.table)
   
-  #df_name <- deparse(substitute(df))
-  df <- na.omit(df)
+  df <- if (nrow(na.omit(df)) == 0) {
+    df
+  } else {
+    na.omit(df)
+  }
+
   t_df <- transpose(head(df, 1))
   rownames(t_df) <- colnames(df)
   t_df <- 
