@@ -962,5 +962,45 @@ fct_school_year <- offers %>%
          year_key = year,
          phase_key,
          all_of(fct_school_year_cols_offers),
-         all_of(fct_school_year_cols_perf))
+         all_of(fct_school_year_cols_perf)) %>% 
+  # deal with duplicates
+  group_by(school_key,
+           la_key,
+           phase_key,
+           year_key) %>% 
+  mutate(fact_count = n()) %>% 
+  summarise_all(mean, na.rm = TRUE) %>% 
+  ungroup() %>% 
+  mutate(fact_flg = if_else(fact_count == 1,
+                            "Actual",
+                            "Average"))
 ```
+
+# Export data
+The final tables for the data model need to be saved as Rdata files, so that they can be accessed by Tableau.
+
+```{r export-data}
+# Define folder location for save
+export_path <- "data-out/"
+
+# Save objects
+save(dim_la, file = paste0(export_path,
+                           "dim_la.Rda"))
+
+save(dim_school, file = paste0(export_path,
+                               "dim_school.Rda"))
+
+save(dim_calendar, file = paste0(export_path,
+                                 "dim_calendar.Rda"))
+
+save(dim_phase, file = paste0(export_path,
+                              "dim_phase.Rda"))
+
+save(fct_school, file = paste0(export_path,
+                               "fct_school.Rda"))
+
+save(fct_school_year, file = paste0(export_path,
+                                    "fct_school_year.Rda"))
+
+```
+

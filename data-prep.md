@@ -26,6 +26,11 @@ Clare Gibson
         -   <a href="#school" id="toc-school">School</a>
         -   <a href="#phase-2" id="toc-phase-2">Phase</a>
         -   <a href="#calendar-2" id="toc-calendar-2">Calendar</a>
+    -   <a href="#facts" id="toc-facts">Facts</a>
+        -   <a href="#school-facts" id="toc-school-facts">School Facts</a>
+        -   <a href="#school-year-facts" id="toc-school-year-facts">School Year
+            Facts</a>
+-   <a href="#export-data" id="toc-export-data">Export data</a>
 
 # Introduction
 
@@ -219,49 +224,6 @@ to academy). We can do this using the `links` columns at the end of this
 data frame, along with the `urn`, to create a bridge table, which we’ll
 call `brg_school`.
 
-``` r
-# Set up the bridge table
-brg_school <- src_info %>%
-  # select required columns
-  select(master_urn = urn,
-         status = establishment_status_name,
-         starts_with("link_")) %>% 
-  # pivot the links
-  pivot_longer(!c(master_urn, status),
-               values_drop_na = TRUE) %>% 
-  # drop the name column
-  select(-name) %>% 
-  # split the description column into useful data
-  mutate(linked_urn = as.numeric(str_extract(value,"\\d+")),
-         link_type = str_trim(str_extract(value,"\\D+"))) %>% 
-  # drop the value column
-  select(-value)
-```
-
-At this point, we can stop and check what are the unique values of the
-`link_type` column?
-
-``` r
-# What are the unique values of link_type
-unique(brg_school$link_type)
-```
-
-    ##  [1] "Does not have links"                                           
-    ##  [2] "Successor - merged"                                            
-    ##  [3] "Successor"                                                     
-    ##  [4] "Predecessor - merged"                                          
-    ##  [5] "Predecessor"                                                   
-    ##  [6] "Sixth Form Centre Link"                                        
-    ##  [7] "Predecessor - amalgamated"                                     
-    ##  [8] "Successor - amalgamated"                                       
-    ##  [9] "Result of Amalgamation"                                        
-    ## [10] "Merged - expansion in school capacity and changer in age range"
-    ## [11] "Merged - change in age range"                                  
-    ## [12] "Other"                                                         
-    ## [13] "Successor - Split School"                                      
-    ## [14] "Merged - expansion of school capacity"                         
-    ## [15] "Predecessor - Split School"
-
 The links I am interested in are the predecessor-successor links so that
 I can keep schools grouped over time. I want the successor school to be
 retained as the master school and all predecessors to be linked to the
@@ -271,21 +233,40 @@ open schools as the master list and any predecessors need to be linked
 to those master URNs.
 
 ``` r
-# Filter the table
-brg_school <- brg_school %>% 
+# Set up the bridge table
+brg_school <- src_info %>%
+  # keep only currently open schools
+  filter(grepl("^Open.*", establishment_status_name)) %>%
+  # select required columns
+  select(master_urn = urn,
+         status = establishment_status_name,
+         starts_with("link_")) %>% 
+  # pivot the links
+  pivot_longer(!c(master_urn, status),
+               values_drop_na = TRUE) %>% 
+  # drop the name column
+  select(-name) %>% 
+  # drop the non-useful link types
+  mutate(value = case_when(
+    value == "Does not have links" ~ value,
+    grepl(".*Predecessor.*", value) ~ value,
+    TRUE ~ "No useful links"
+  )) %>% 
+  # split the description column into useful data
+  mutate(linked_urn = as.numeric(str_extract(value,"\\d+")),
+         link_type = str_trim(str_extract(value,"\\D+"))) %>% 
+  # drop the value column
+  select(-value) %>% 
   # add self-urn
   mutate(self_urn = master_urn) %>% 
   pivot_longer(cols = c(linked_urn, self_urn),
                names_to = "urn_type",
                values_to = "linked_urn",
                values_drop_na = TRUE) %>% 
-  # keep only currently open schools
-  filter(grepl("^Open.*",
-               status,
-               ignore.case = TRUE)) %>% 
   # select required columns
   select(master_urn,
-         linked_urn)
+         linked_urn) %>% 
+  distinct()
 ```
 
 Now that the bridge table is set up I can filter the `src_info` table to
@@ -894,21 +875,23 @@ perf_ks2 <- bind_rows(
          writprog,
          matprog) %>% 
   # convert to numeric (any strings can be converted to NA)
-  mutate(across(everything(), as.numeric))
+  mutate(across(everything(), as.numeric)) %>% 
+  # add a column for phase
+  mutate(phase = "Primary")
 
 # View the head
 head(perf_ks2)
 ```
 
-    ## # A tibble: 6 × 5
-    ##    year    urn readprog writprog matprog
-    ##   <dbl>  <dbl>    <dbl>    <dbl>   <dbl>
-    ## 1  2015 100000      2.7      2.2     3  
-    ## 2  2015 100028      2.6      4       3.5
-    ## 3  2015 100029      2.3      1.4     0.3
-    ## 4  2015 130342      3.4      2.2     2.3
-    ## 5  2015 100013      2        1.4     6  
-    ## 6  2015 100027      3.5      0.4     2.7
+    ## # A tibble: 6 × 6
+    ##    year    urn readprog writprog matprog phase  
+    ##   <dbl>  <dbl>    <dbl>    <dbl>   <dbl> <chr>  
+    ## 1  2015 100000      2.7      2.2     3   Primary
+    ## 2  2015 100028      2.6      4       3.5 Primary
+    ## 3  2015 100029      2.3      1.4     0.3 Primary
+    ## 4  2015 130342      3.4      2.2     2.3 Primary
+    ## 5  2015 100013      2        1.4     6   Primary
+    ## 6  2015 100027      3.5      0.4     2.7 Primary
 
 ``` r
 # Bind rows from all years
@@ -927,21 +910,23 @@ perf_ks4 <- bind_rows(
          p8mea,
          att8scr) %>% 
   # convert to numeric (any strings can be converted to NA)
-  mutate(across(everything(), as.numeric))
+  mutate(across(everything(), as.numeric)) %>% 
+  # add the phase
+  mutate(phase = "Secondary")
 
 # View the head
 head(perf_ks4)
 ```
 
-    ## # A tibble: 6 × 4
-    ##    year    urn p8mea att8scr
-    ##   <dbl>  <dbl> <dbl>   <dbl>
-    ## 1  2015 100003 NA       42.1
-    ## 2  2015 100001 NA       32.2
-    ## 3  2015 100053 -0.26    50.1
-    ## 4  2015 100054  0.31    60.1
-    ## 5  2015 137333 NA        3.4
-    ## 6  2015 100084 NA       49.4
+    ## # A tibble: 6 × 5
+    ##    year    urn p8mea att8scr phase    
+    ##   <dbl>  <dbl> <dbl>   <dbl> <chr>    
+    ## 1  2015 100003 NA       42.1 Secondary
+    ## 2  2015 100001 NA       32.2 Secondary
+    ## 3  2015 100053 -0.26    50.1 Secondary
+    ## 4  2015 100054  0.31    60.1 Secondary
+    ## 5  2015 137333 NA        3.4 Secondary
+    ## 6  2015 100084 NA       49.4 Secondary
 
 Now we can join the KS2 and KS4 data together and recode the progress
 measure names.
@@ -960,16 +945,16 @@ performance <- perf_ks2 %>%
 head(performance)
 ```
 
-    ## # A tibble: 6 × 7
-    ##    year    urn reading_progress writing_progress maths_progress progre…¹ attai…²
-    ##   <dbl>  <dbl>            <dbl>            <dbl>          <dbl>    <dbl>   <dbl>
-    ## 1  2015 100000              2.7              2.2            3         NA      NA
-    ## 2  2015 100028              2.6              4              3.5       NA      NA
-    ## 3  2015 100029              2.3              1.4            0.3       NA      NA
-    ## 4  2015 130342              3.4              2.2            2.3       NA      NA
-    ## 5  2015 100013              2                1.4            6         NA      NA
-    ## 6  2015 100027              3.5              0.4            2.7       NA      NA
-    ## # … with abbreviated variable names ¹​progress_8, ²​attainment_8
+    ## # A tibble: 6 × 8
+    ##    year    urn reading_progress writing_progress maths_p…¹ phase progr…² attai…³
+    ##   <dbl>  <dbl>            <dbl>            <dbl>     <dbl> <chr>   <dbl>   <dbl>
+    ## 1  2015 100000              2.7              2.2       3   Prim…      NA      NA
+    ## 2  2015 100028              2.6              4         3.5 Prim…      NA      NA
+    ## 3  2015 100029              2.3              1.4       0.3 Prim…      NA      NA
+    ## 4  2015 130342              3.4              2.2       2.3 Prim…      NA      NA
+    ## 5  2015 100013              2                1.4       6   Prim…      NA      NA
+    ## 6  2015 100027              3.5              0.4       2.7 Prim…      NA      NA
+    ## # … with abbreviated variable names ¹​maths_progress, ²​progress_8, ³​attainment_8
 
 ## Phase
 
@@ -997,6 +982,7 @@ create for this model and the relationships between them.
 | Fact/Dimension   | dim_la | dim_school | dim_calendar | dim_phase |
 |------------------|:------:|:----------:|:------------:|:---------:|
 | fact_school_year |   x    |     x      |      x       |     x     |
+| fact_school      |   x    |     x      |              |           |
 
 Fact and dimension tables
 
@@ -1328,4 +1314,185 @@ already exists.
 ``` r
 # Build the calendar dimension
 dim_calendar <- calendar
+```
+
+## Facts
+
+### School Facts
+
+To build the school facts table we will need to following columns, plus
+keys for all dimensions:
+
+``` r
+# Which columns are needed for the school fact table?
+star_schema %>% 
+  filter(model_table == "fact_school") %>% 
+  kable()
+```
+
+| source_table | source_field        | source_value_example | model_table |
+|:-------------|:--------------------|:---------------------|:------------|
+| info         | school_capacity     | 315                  | fact_school |
+| info         | number_of_pupils    | 382                  | fact_school |
+| info         | number_of_boys      | 208                  | fact_school |
+| info         | number_of_girls     | 174                  | fact_school |
+| info         | percentage_fsm      | 30.6                 | fact_school |
+| info         | number_of_fsm       | 102                  | fact_school |
+| info         | ofsted_rating_score | 2                    | fact_school |
+
+These fields can all come from the `info` table.
+
+\# Build out the school fact table
+
+``` r
+# Define columns to include
+fct_school_cols <- star_schema %>% 
+  filter(model_table == "fact_school",
+         source_table == "info") %>% 
+  pull(source_field)
+
+# Build out the school fact table
+fct_school <- info %>% 
+  # select columns
+  select(linked_urn = urn,
+         la_code,
+         la_name,
+         all_of(fct_school_cols)) %>% 
+  # join school key (via bridge)
+  left_join(brg_school) %>% 
+  left_join(select(dim_school,
+                   master_urn = urn,
+                   school_key)) %>% 
+  # join la key
+  left_join(select(dim_la,
+                   la_code,
+                   la_name,
+                   la_key)) %>% 
+  # select final columns
+  select(school_key,
+         la_key,
+         all_of(fct_school_cols))
+```
+
+### School Year Facts
+
+To build the school year facts table we need the following columns:
+
+``` r
+# Which columns are needed for the school year fact table?
+star_schema %>% 
+  filter(model_table == "fact_school_year") %>% 
+  kable()
+```
+
+| source_table | source_field                         | source_value_example | model_table      |
+|:-------------|:-------------------------------------|:---------------------|:-----------------|
+| offers       | number_of_preferences                | 6                    | fact_school_year |
+| offers       | total_number_places_offered          | 30                   | fact_school_year |
+| offers       | number_preferred_offers              | 30                   | fact_school_year |
+| offers       | number_1st_preference_offers         | 30                   | fact_school_year |
+| offers       | number_2nd_preference_offers         | 0                    | fact_school_year |
+| offers       | number_3rd_preference_offers         | 0                    | fact_school_year |
+| offers       | times_put_as_any_preferred_school    | 81                   | fact_school_year |
+| offers       | times_put_as_1st_preference          | 42                   | fact_school_year |
+| offers       | times_put_as_2nd_preference          | 16                   | fact_school_year |
+| offers       | times_put_as_3rd_preference          | 6                    | fact_school_year |
+| offers       | proportion_1stprefs_v\_1stprefoffers | 1.4                  | fact_school_year |
+| offers       | proportion_1stprefs_v\_totaloffers   | 1.4                  | fact_school_year |
+| offers       | all_applications_from_another_la     | 62                   | fact_school_year |
+| offers       | offers_to_applicants_from_another_la | 16                   | fact_school_year |
+| performance  | reading_progress                     | 2.8                  | fact_school_year |
+| performance  | writing_progress                     | 4                    | fact_school_year |
+| performance  | maths_progress                       | 0.5                  | fact_school_year |
+| performance  | progress_8                           | 0.47                 | fact_school_year |
+| performance  | attainment_8                         | 65                   | fact_school_year |
+
+These columns all come from `offers` and `performance`.
+
+``` r
+# Define columns to include
+fct_school_year_cols_offers <- star_schema %>% 
+  filter(model_table == "fact_school_year",
+         source_table == "offers") %>% 
+  pull(source_field)
+
+fct_school_year_cols_perf <- star_schema %>% 
+  filter(model_table == "fact_school_year",
+         source_table == "performance") %>% 
+  pull(source_field)
+
+# Build out the school year fact table
+fct_school_year <- offers %>% 
+  select(linked_urn = urn,
+         la_code,
+         la_name,
+         year,
+         phase_name = phase,
+         all_of(fct_school_year_cols_offers)) %>% 
+  left_join(select(performance,
+                   linked_urn = urn,
+                   year,
+                   phase_name = phase,
+                   all_of(fct_school_year_cols_perf))) %>% 
+  # join school key (via bridge)
+  left_join(brg_school) %>% 
+  left_join(select(dim_school,
+                   master_urn = urn,
+                   school_key)) %>% 
+  # join la key
+  left_join(select(dim_la,
+                   la_code,
+                   la_name,
+                   la_key)) %>% 
+  # join phase key
+  left_join(select(dim_phase,
+                   phase_name,
+                   phase_key)) %>% 
+  # select final columns
+  select(school_key,
+         la_key,
+         year_key = year,
+         phase_key,
+         all_of(fct_school_year_cols_offers),
+         all_of(fct_school_year_cols_perf)) %>% 
+  # deal with duplicates
+  group_by(school_key,
+           la_key,
+           phase_key,
+           year_key) %>% 
+  mutate(fact_count = n()) %>% 
+  summarise_all(mean, na.rm = TRUE) %>% 
+  ungroup() %>% 
+  mutate(fact_flg = if_else(fact_count == 1,
+                            "Actual",
+                            "Average"))
+```
+
+# Export data
+
+The final tables for the data model need to be saved as Rdata files, so
+that they can be accessed by Tableau.
+
+``` r
+# Define folder location for save
+export_path <- "data-out/"
+
+# Save objects
+save(dim_la, file = paste0(export_path,
+                           "dim_la.Rda"))
+
+save(dim_school, file = paste0(export_path,
+                               "dim_school.Rda"))
+
+save(dim_calendar, file = paste0(export_path,
+                                 "dim_calendar.Rda"))
+
+save(dim_phase, file = paste0(export_path,
+                              "dim_phase.Rda"))
+
+save(fct_school, file = paste0(export_path,
+                               "fct_school.Rda"))
+
+save(fct_school_year, file = paste0(export_path,
+                                    "fct_school_year.Rda"))
 ```
