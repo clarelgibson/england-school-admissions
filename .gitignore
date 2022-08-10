@@ -4,6 +4,7 @@
 
 # Session Data files
 .RData
+.RDataTmp
 
 # User-specific files
 .Ruserdata
@@ -40,3 +41,9 @@ vignettes/*.pdf
 
 # MacOS files
 .DS_Store
+
+# Data-out
+/data-out
+
+# Sandbox
+sandbox.R
