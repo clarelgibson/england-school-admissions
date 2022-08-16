@@ -415,6 +415,104 @@ info %>%
     ## 48                  lsoa_code         15565
     ## 49              number_of_fsm           525
 
+The `la_name` and `la_code` fields need to be checked to ensure they are
+consistent. I refer to the [Office for National
+Statistics](https://www.ons.gov.uk) [Local Authority Districts (December
+2021) Names and Codes in the United
+Kingdom](https://geoportal.statistics.gov.uk/documents/c4f647d8a4a648d7b4a1ebf057f8aaa3/about)
+document for the latest reference data for these fields. This document
+is included in the Google Drive [ref
+folder](https://drive.google.com/drive/folders/1lsRDMfjSzabSF8HVJdF8ex5JM6rDRlSo?usp=sharing).
+
+``` r
+# Read in the reference file for local authority names
+src_la_ref_path <- "https://docs.google.com/spreadsheets/d/1Atbagsqr0KJZV5xWh64zzM3aHR9BK-Xzvawgw46jYPc/edit?usp=sharing"
+src_la_ref <- read_sheet(src_la_ref_path)
+
+head(src_la_ref)
+```
+
+    ## # A tibble: 6 × 3
+    ##   LAD21CD   LAD21NM              LAD21NMW
+    ##   <chr>     <chr>                <chr>   
+    ## 1 E06000001 Hartlepool           <NA>    
+    ## 2 E06000002 Middlesbrough        <NA>    
+    ## 3 E06000003 Redcar and Cleveland <NA>    
+    ## 4 E06000004 Stockton-on-Tees     <NA>    
+    ## 5 E06000005 Darlington           <NA>    
+    ## 6 E06000006 Halton               <NA>
+
+``` r
+# Clean the LA reference table
+la_ref <- src_la_ref %>% 
+  select(gss_la_code = LAD21CD,
+         la_name = LAD21NM) %>% 
+  arrange(la_name)
+```
+
+Now, let’s review the unique values of LA code and name in the `info`
+df.
+
+``` r
+# Review the unique values in la_name
+info %>% 
+  select(la_code, gss_la_code, la_name) %>% 
+  distinct() %>% 
+  arrange(la_name, la_code, gss_la_code)
+```
+
+    ## # A tibble: 184 × 3
+    ##    la_code gss_la_code la_name                     
+    ##      <dbl> <chr>       <chr>                       
+    ##  1     301 E09000002   Barking and Dagenham        
+    ##  2     302 E09000003   Barnet                      
+    ##  3     302 X999999     Barnet                      
+    ##  4     370 E08000016   Barnsley                    
+    ##  5     800 E06000022   Bath and North East Somerset
+    ##  6     800 X999999     Bath and North East Somerset
+    ##  7     822 E06000055   Bedford                     
+    ##  8     303 E09000004   Bexley                      
+    ##  9     330 E08000025   Birmingham                  
+    ## 10     330 X999999     Birmingham                  
+    ## # … with 174 more rows
+    ## # ℹ Use `print(n = ...)` to see more rows
+
+We can see that some of the `gss-la-code` values here are wrong. It
+looks like a value of `X999999` has been used where the true value could
+not be determined when the source data was put together. We need to
+replace this value with the correct value according to the reference
+table.
+
+``` r
+# Correct the erroneous gss_la_code fields
+info <- info %>% 
+  group_by(la_code, la_name) %>% 
+  mutate(gss_la_code = min(gss_la_code)) %>% 
+  ungroup()
+
+# Check the results
+info %>% 
+  select(la_code, gss_la_code, la_name) %>% 
+  distinct() %>% 
+  arrange(la_name, la_code, gss_la_code)
+```
+
+    ## # A tibble: 152 × 3
+    ##    la_code gss_la_code la_name                     
+    ##      <dbl> <chr>       <chr>                       
+    ##  1     301 E09000002   Barking and Dagenham        
+    ##  2     302 E09000003   Barnet                      
+    ##  3     370 E08000016   Barnsley                    
+    ##  4     800 E06000022   Bath and North East Somerset
+    ##  5     822 E06000055   Bedford                     
+    ##  6     303 E09000004   Bexley                      
+    ##  7     330 E08000025   Birmingham                  
+    ##  8     889 E06000008   Blackburn with Darwen       
+    ##  9     890 E06000009   Blackpool                   
+    ## 10     350 E08000001   Bolton                      
+    ## # … with 142 more rows
+    ## # ℹ Use `print(n = ...)` to see more rows
+
 Some columns have relatively few unique values, making these columns
 clearly categorical. I’d like to review the values to ensure they are
 consistent and well labelled.
@@ -699,7 +797,7 @@ offers <- offers %>%
 ```
 
 Let’s now review the selected column headings in this dataset and the
-number of unique values in each column
+number of unique values in each column.
 
 ``` r
 # Print a list of the column headings in the offers df
@@ -735,6 +833,30 @@ offers %>%
 
 Let’s review the categorical values to ensure they are consistent and
 well labelled.
+
+``` r
+# Review the unique values of la_name
+offers %>% 
+  select(la_code, la_name) %>% 
+  distinct() %>% 
+  arrange(la_name, la_code)
+```
+
+    ## # A tibble: 160 × 2
+    ##    la_code la_name                     
+    ##      <dbl> <chr>                       
+    ##  1     301 Barking and Dagenham        
+    ##  2     302 Barnet                      
+    ##  3     370 Barnsley                    
+    ##  4     800 Bath and North East Somerset
+    ##  5     822 Bedford                     
+    ##  6     303 Bexley                      
+    ##  7     330 Birmingham                  
+    ##  8     889 Blackburn with Darwen       
+    ##  9     890 Blackpool                   
+    ## 10     350 Bolton                      
+    ## # … with 150 more rows
+    ## # ℹ Use `print(n = ...)` to see more rows
 
 ``` r
 # Review the unique values of year

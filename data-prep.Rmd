@@ -279,6 +279,48 @@ info %>%
   rename(unique_values = V1)
 ```
 
+The `la_name` and `la_code` fields need to be checked to ensure they are consistent. I refer to the [Office for National Statistics](https://www.ons.gov.uk) [Local Authority Districts (December 2021) Names and Codes in the United Kingdom](https://geoportal.statistics.gov.uk/documents/c4f647d8a4a648d7b4a1ebf057f8aaa3/about) document for the latest reference data for these fields. This document is included in the Google Drive [ref folder](https://drive.google.com/drive/folders/1lsRDMfjSzabSF8HVJdF8ex5JM6rDRlSo?usp=sharing).
+
+```{r la-ref-read}
+# Read in the reference file for local authority names
+src_la_ref_path <- "https://docs.google.com/spreadsheets/d/1Atbagsqr0KJZV5xWh64zzM3aHR9BK-Xzvawgw46jYPc/edit?usp=sharing"
+src_la_ref <- read_sheet(src_la_ref_path)
+
+head(src_la_ref)
+```
+
+```{r la-ref-clean}
+# Clean the LA reference table
+la_ref <- src_la_ref %>% 
+  select(gss_la_code = LAD21CD,
+         la_name = LAD21NM) %>% 
+  arrange(la_name)
+```
+
+Now, let's review the unique values of LA code and name in the `info` df.
+```{r info-review-la-names}
+# Review the unique values in la_name
+info %>% 
+  select(la_code, gss_la_code, la_name) %>% 
+  distinct() %>% 
+  arrange(la_name, la_code, gss_la_code)
+```
+We can see that some of the `gss-la-code` values here are wrong. It looks like a value of `X999999` has been used where the true value could not be determined when the source data was put together. We need to replace this value with the correct value according to the reference table.
+
+```{r info-clean-gss-code}
+# Correct the erroneous gss_la_code fields
+info <- info %>% 
+  group_by(la_code, la_name) %>% 
+  mutate(gss_la_code = min(gss_la_code)) %>% 
+  ungroup()
+
+# Check the results
+info_la <- info %>% 
+  select(la_code, gss_la_code, la_name) %>% 
+  distinct() %>% 
+  arrange(la_name, la_code, gss_la_code)
+```
+
 Some columns have relatively few unique values, making these columns clearly categorical. I'd like to review the values to ensure they are consistent and well labelled.
 
 ```{r info-review-establishment-type}
@@ -452,7 +494,7 @@ offers <- offers %>%
   mutate(across(all_of(offers_num), as.numeric))
 ```
 
-Let's now review the selected column headings in this dataset and the number of unique values in each column
+Let's now review the selected column headings in this dataset and the number of unique values in each column.
 
 ```{r offers-unique-values}
 # Print a list of the column headings in the offers df
@@ -463,6 +505,77 @@ offers %>%
 ```
 
 Let's review the categorical values to ensure they are consistent and well labelled.
+
+```{r offers-review-la-name}
+# Review the unique values of la_name
+offers %>% 
+  select(la_code, la_name) %>% 
+  distinct() %>% 
+  arrange(la_name, la_code)
+```
+
+Some of these entries need to be corrected to match the values in `info`.
+
+```{r offers-extract-la-name}
+offers_la <- offers %>% 
+  select(urn, year, la_code, la_name, region_code, region_name) %>% 
+  distinct() %>% 
+  arrange(urn, -year, la_code, la_name) %>% 
+  group_by(urn) %>% 
+  slice_head(n = 1) %>% 
+  ungroup() %>%
+  left_join(brg_school,
+            by = c("urn" = "linked_urn")) %>% 
+  left_join(select(info,
+                   master_urn = urn,
+                   master_la_code = la_code,
+                   master_la_name = la_name)) %>% 
+  mutate(la_code = coalesce(master_la_code, la_code),
+         la_name = coalesce(master_la_name, la_name)) %>% 
+  select(urn, master_urn, year, la_code, la_name,
+         region_code, region_name) %>% 
+  mutate(la_code = case_when(urn == 121820 ~ 941,
+                             urn == 121883 ~ 941,
+                             urn == 122020 ~ 940,
+                             urn == 142147 ~ 940,
+                             TRUE ~ la_code),
+         la_name = case_when(urn == 121820 ~ "West Northamptonshire",
+                             urn == 121883 ~ "West Northamptonshire",
+                             urn == 122020 ~ "North Northamptonshire",
+                             urn == 142147 ~ "North Northamptonshire",
+                             TRUE ~ la_name)) %>% 
+  select(la_code, la_name, region_code, region_name) %>% 
+  distinct()
+```
+
+
+```{r offers-clean-la-name}
+offers <- offers %>% 
+  mutate(la_code = case_when(la_code == 837 ~ 839,
+                             la_code == 835 ~ 838,
+                             la_code == 836 ~ 839,
+                             la_name == "Wokingham" ~ 872,
+                             la_name == "Norfolk" ~ 926,
+                             TRUE ~ la_code),
+         la_name = case_when(grepl("Bournemouth|Poole", la_name)
+                             ~ "Bournemouth, Christchurch and Poole",
+                             grepl("Bristol", la_name)
+                             ~ "Bristol, City of",
+                             grepl("Durham", la_name)
+                             ~ "County Durham",
+                             grepl("Herefordshire", la_name)
+                             ~ "Herefordshire, County of",
+                             grepl("Hull", la_name)
+                             ~ "Kingston upon Hull, City of",
+                             TRUE ~ la_name))
+
+# Check the results
+offers %>% 
+  select(la_code, la_name) %>% 
+  distinct() %>% 
+  arrange(la_name, la_code)
+```
+
 
 ```{r offers-review-year}
 # Review the unique values of year
