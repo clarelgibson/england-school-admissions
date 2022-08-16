@@ -788,58 +788,24 @@ star_schema %>%
 These columns can all come from the `offers` and `info` data frames.
 
 ```{r dim-la-build}
-# Define columns to include
-dim_la_cols_offers <- star_schema %>% 
-  filter(model_table == "dim_la",
-         source_table == "offers") %>% 
-  pull(source_field)
-
-dim_la_cols_info <- star_schema %>% 
-  filter(model_table == "dim_la",
-         source_table == "info") %>% 
-  pull(source_field)
-
-# Define which rows from offers should be joined (as there can be more than
-# one record per URN)
-dim_la_offers <- offers %>% 
-  select(all_of(dim_la_cols_offers)) %>% 
-  distinct()
-
 # Build out the local authority dimension table
-dim_la <- info %>% 
-  select(all_of(dim_la_cols_info)) %>% 
-  distinct() %>% 
-  group_by(la_code, la_name) %>% 
-  slice_min(gss_la_code) %>% 
-  ungroup() %>% 
-  full_join(dim_la_offers)
-
-# Replace NA in dim_la
-dim_la$gss_la_code[is.na(dim_la$gss_la_code)] <- "Not reported"
+dim_la <- info_la %>% 
+  full_join(offers_la) %>% 
+  mutate(region_code = case_when(la_code == 420 ~ "E12000009",
+                                 TRUE ~ region_code),
+         region_name = case_when(la_code == 420 ~ "South West",
+                                 TRUE ~ region_name)) %>% 
+  select(la_code,
+         la_name,
+         gss_la_code,
+         region_code,
+         region_name)
 
 # Check the result
 head(dim_la)
 ```
 
-Note that `la_code` is not unique.
-
-```{r dim-la-la-code}
-# How many values of la_code are not unique?
-dim_la %>% 
-  count(la_code) %>% 
-  filter(n > 1)
-```
-
-Let's check if `la_name` is unique.
-
-```{r dim-la-la-name}
-# Is LA name unique?
-dim_la %>% 
-  count(la_name) %>% 
-  filter(n > 1)
-```
-
-This means that, over time, some codes have been recycled and used for different local authorities, and some local authorities have had changes in code. Let's assign a unique key to each record, and add a record for the `null` case, which we'll call `Not reported`.
+Let's assign a unique key to each record, and add a record for the `null` case, which we'll call `Not reported`.
 
 ```{r dim-la-key}
 # Specify the null value
@@ -1056,7 +1022,7 @@ fct_school_year <- offers %>%
                    phase_name = phase,
                    all_of(fct_school_year_cols_perf))) %>% 
   # join school key (via bridge)
-  left_join(brg_school) %>% 
+  inner_join(brg_school) %>% 
   left_join(select(dim_school,
                    master_urn = urn,
                    school_key)) %>% 
