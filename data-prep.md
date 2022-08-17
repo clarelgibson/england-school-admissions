@@ -491,27 +491,11 @@ info <- info %>%
   ungroup()
 
 # Check the results
-info %>% 
+info_la <- info %>% 
   select(la_code, gss_la_code, la_name) %>% 
   distinct() %>% 
   arrange(la_name, la_code, gss_la_code)
 ```
-
-    ## # A tibble: 152 × 3
-    ##    la_code gss_la_code la_name                     
-    ##      <dbl> <chr>       <chr>                       
-    ##  1     301 E09000002   Barking and Dagenham        
-    ##  2     302 E09000003   Barnet                      
-    ##  3     370 E08000016   Barnsley                    
-    ##  4     800 E06000022   Bath and North East Somerset
-    ##  5     822 E06000055   Bedford                     
-    ##  6     303 E09000004   Bexley                      
-    ##  7     330 E08000025   Birmingham                  
-    ##  8     889 E06000008   Blackburn with Darwen       
-    ##  9     890 E06000009   Blackpool                   
-    ## 10     350 E08000001   Bolton                      
-    ## # … with 142 more rows
-    ## # ℹ Use `print(n = ...)` to see more rows
 
 Some columns have relatively few unique values, making these columns
 clearly categorical. I’d like to review the values to ensure they are
@@ -858,6 +842,74 @@ offers %>%
     ## # … with 150 more rows
     ## # ℹ Use `print(n = ...)` to see more rows
 
+Some of these entries need to be corrected to match the values in
+`info`.
+
+``` r
+offers_la <- offers %>% 
+  select(urn,
+         year,
+         la_code,
+         la_name,
+         region_code,
+         region_name) %>% 
+  distinct() %>% 
+  arrange(urn,
+          -year,
+          la_code,
+          la_name) %>% 
+  group_by(urn) %>% 
+  slice_head(n = 1) %>% 
+  ungroup() %>%
+  inner_join(brg_school,
+            by = c("urn" = "linked_urn")) %>% 
+  left_join(select(info,
+                   master_urn = urn,
+                   master_la_code = la_code,
+                   master_la_name = la_name)) %>% 
+  mutate(la_code = coalesce(master_la_code, la_code),
+         la_name = coalesce(master_la_name, la_name)) %>% 
+  select(urn,
+         master_urn,
+         #year,
+         la_code,
+         la_name,
+         region_code,
+         region_name) %>% 
+  distinct()
+```
+
+``` r
+offers <- offers %>% 
+  select(-c(region_code,
+            region_name,
+            la_code,
+            la_name)) %>% 
+  inner_join(offers_la)
+
+# Check the results
+offers %>% 
+  select(la_code, la_name) %>% 
+  distinct() %>% 
+  arrange(la_name, la_code)
+```
+
+    ## # A tibble: 151 × 2
+    ##    la_code la_name                     
+    ##      <dbl> <chr>                       
+    ##  1     301 Barking and Dagenham        
+    ##  2     302 Barnet                      
+    ##  3     370 Barnsley                    
+    ##  4     800 Bath and North East Somerset
+    ##  5     822 Bedford                     
+    ##  6     303 Bexley                      
+    ##  7     330 Birmingham                  
+    ##  8     889 Blackburn with Darwen       
+    ##  9     890 Blackpool                   
+    ## 10     350 Bolton                      
+    ## # … with 141 more rows
+    ## # ℹ Use `print(n = ...)` to see more rows
+
 ``` r
 # Review the unique values of year
 unique(offers$year)
@@ -897,22 +949,22 @@ offers %>%
   head()
 ```
 
-    ## # A tibble: 6 × 22
-    ##    year region…¹ regio…² la_code la_name numbe…³ total…⁴ numbe…⁵ numbe…⁶ numbe…⁷
-    ##   <dbl> <chr>    <chr>     <dbl> <chr>     <dbl>   <dbl>   <dbl>   <dbl>   <dbl>
-    ## 1  2022 E120000… South …     803 South …       3      61      61      61       0
-    ## 2  2022 E120000… East M…     830 Derbys…       3      30      30      29       1
-    ## 3  2022 E120000… South …     865 Wiltsh…       3      30      30      29       1
-    ## 4  2022 E120000… South …     865 Wiltsh…       3      35      34      32       2
-    ## 5  2022 E120000… South …     866 Swindon       3      59      59      58       1
-    ## 6  2022 E120000… South …     867 Brackn…       3      30      30      30       0
-    ## # … with 12 more variables: number_3rd_preference_offers <dbl>,
-    ## #   times_put_as_any_preferred_school <dbl>, times_put_as_1st_preference <dbl>,
-    ## #   times_put_as_2nd_preference <dbl>, times_put_as_3rd_preference <dbl>,
+    ## # A tibble: 6 × 23
+    ##    year number…¹ total…² numbe…³ numbe…⁴ numbe…⁵ numbe…⁶ times…⁷ times…⁸ times…⁹
+    ##   <dbl>    <dbl>   <dbl>   <dbl>   <dbl>   <dbl>   <dbl>   <dbl>   <dbl>   <dbl>
+    ## 1  2022        3      61      61      61       0       0     132      98      20
+    ## 2  2022        3      30      30      29       1       0     101      44      47
+    ## 3  2022        3      30      30      29       1       0      79      38      32
+    ## 4  2022        3      35      34      32       2       0      68      32      20
+    ## 5  2022        3      59      59      58       1       0     137      68      57
+    ## 6  2022        3      30      30      30       0       0     112      36      49
+    ## # … with 13 more variables: times_put_as_3rd_preference <dbl>,
     ## #   proportion_1stprefs_v_1stprefoffers <dbl>,
     ## #   proportion_1stprefs_v_totaloffers <dbl>,
     ## #   all_applications_from_another_la <dbl>,
-    ## #   offers_to_applicants_from_another_la <dbl>, religious_denomination <chr>, …
+    ## #   offers_to_applicants_from_another_la <dbl>, religious_denomination <chr>,
+    ## #   urn <dbl>, phase <chr>, master_urn <dbl>, la_code <dbl>, la_name <chr>,
+    ## #   region_code <chr>, region_name <chr>, and abbreviated variable names …
     ## # ℹ Use `colnames()` to see all variable names
 
 I guess this must be for schools who did not report their denomination.
@@ -1167,34 +1219,23 @@ star_schema %>%
 These columns can all come from the `offers` and `info` data frames.
 
 ``` r
-# Define columns to include
-dim_la_cols_offers <- star_schema %>% 
-  filter(model_table == "dim_la",
-         source_table == "offers") %>% 
-  pull(source_field)
-
-dim_la_cols_info <- star_schema %>% 
-  filter(model_table == "dim_la",
-         source_table == "info") %>% 
-  pull(source_field)
-
-# Define which rows from offers should be joined (as there can be more than
-# one record per URN)
-dim_la_offers <- offers %>% 
-  select(all_of(dim_la_cols_offers)) %>% 
-  distinct()
-
 # Build out the local authority dimension table
-dim_la <- info %>% 
-  select(all_of(dim_la_cols_info)) %>% 
+dim_la <- offers_la %>% 
+  select(la_code,
+         la_name, 
+         region_code,
+         region_name) %>% 
   distinct() %>% 
-  group_by(la_code, la_name) %>% 
-  slice_min(gss_la_code) %>% 
-  ungroup() %>% 
-  full_join(dim_la_offers)
-
-# Replace NA in dim_la
-dim_la$gss_la_code[is.na(dim_la$gss_la_code)] <- "Not reported"
+  full_join(info_la) %>% 
+  mutate(region_code = case_when(la_code == 420 ~ "E12000009",
+                                 TRUE ~ region_code),
+         region_name = case_when(la_code == 420 ~ "South West",
+                                 TRUE ~ region_name)) %>% 
+  select(la_code,
+         la_name,
+         gss_la_code,
+         region_code,
+         region_name)
 
 # Check the result
 head(dim_la)
@@ -1210,46 +1251,8 @@ head(dim_la)
     ## 5     205 Hammersmith and Fulham E09000013   E13000001   Inner London
     ## 6     206 Islington              E09000019   E13000001   Inner London
 
-Note that `la_code` is not unique.
-
-``` r
-# How many values of la_code are not unique?
-dim_la %>% 
-  count(la_code) %>% 
-  filter(n > 1)
-```
-
-    ## # A tibble: 7 × 2
-    ##   la_code     n
-    ##     <dbl> <int>
-    ## 1     203     2
-    ## 2     801     2
-    ## 3     810     2
-    ## 4     839     2
-    ## 5     840     2
-    ## 6     884     2
-    ## 7     928     2
-
-Let’s check if `la_name` is unique.
-
-``` r
-# Is LA name unique?
-dim_la %>% 
-  count(la_name) %>% 
-  filter(n > 1)
-```
-
-    ## # A tibble: 3 × 2
-    ##   la_name       n
-    ##   <chr>     <int>
-    ## 1 Dorset        2
-    ## 2 Norfolk       2
-    ## 3 Wokingham     2
-
-This means that, over time, some codes have been recycled and used for
-different local authorities, and some local authorities have had changes
-in code. Let’s assign a unique key to each record, and add a record for
-the `null` case, which we’ll call `Not reported`.
+Let’s assign a unique key to each record, and add a record for the
+`null` case, which we’ll call `Not reported`.
 
 ``` r
 # Specify the null value
@@ -1557,7 +1560,7 @@ fct_school_year <- offers %>%
                    phase_name = phase,
                    all_of(fct_school_year_cols_perf))) %>% 
   # join school key (via bridge)
-  left_join(brg_school) %>% 
+  inner_join(brg_school) %>% 
   left_join(select(dim_school,
                    master_urn = urn,
                    school_key)) %>% 

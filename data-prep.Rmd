@@ -516,15 +516,23 @@ offers %>%
 
 Some of these entries need to be corrected to match the values in `info`.
 
-```{r offers-extract-la-name}
+```{r offers-clean-la-name}
 offers_la <- offers %>% 
-  select(urn, year, la_code, la_name, region_code, region_name) %>% 
+  select(urn,
+         year,
+         la_code,
+         la_name,
+         region_code,
+         region_name) %>% 
   distinct() %>% 
-  arrange(urn, -year, la_code, la_name) %>% 
+  arrange(urn,
+          -year,
+          la_code,
+          la_name) %>% 
   group_by(urn) %>% 
   slice_head(n = 1) %>% 
   ungroup() %>%
-  left_join(brg_school,
+  inner_join(brg_school,
             by = c("urn" = "linked_urn")) %>% 
   left_join(select(info,
                    master_urn = urn,
@@ -532,42 +540,23 @@ offers_la <- offers %>%
                    master_la_name = la_name)) %>% 
   mutate(la_code = coalesce(master_la_code, la_code),
          la_name = coalesce(master_la_name, la_name)) %>% 
-  select(urn, master_urn, year, la_code, la_name,
-         region_code, region_name) %>% 
-  mutate(la_code = case_when(urn == 121820 ~ 941,
-                             urn == 121883 ~ 941,
-                             urn == 122020 ~ 940,
-                             urn == 142147 ~ 940,
-                             TRUE ~ la_code),
-         la_name = case_when(urn == 121820 ~ "West Northamptonshire",
-                             urn == 121883 ~ "West Northamptonshire",
-                             urn == 122020 ~ "North Northamptonshire",
-                             urn == 142147 ~ "North Northamptonshire",
-                             TRUE ~ la_name)) %>% 
-  select(la_code, la_name, region_code, region_name) %>% 
+  select(urn,
+         master_urn,
+         #year,
+         la_code,
+         la_name,
+         region_code,
+         region_name) %>% 
   distinct()
 ```
 
-
-```{r offers-clean-la-name}
+```{r offers-update-la-name}
 offers <- offers %>% 
-  mutate(la_code = case_when(la_code == 837 ~ 839,
-                             la_code == 835 ~ 838,
-                             la_code == 836 ~ 839,
-                             la_name == "Wokingham" ~ 872,
-                             la_name == "Norfolk" ~ 926,
-                             TRUE ~ la_code),
-         la_name = case_when(grepl("Bournemouth|Poole", la_name)
-                             ~ "Bournemouth, Christchurch and Poole",
-                             grepl("Bristol", la_name)
-                             ~ "Bristol, City of",
-                             grepl("Durham", la_name)
-                             ~ "County Durham",
-                             grepl("Herefordshire", la_name)
-                             ~ "Herefordshire, County of",
-                             grepl("Hull", la_name)
-                             ~ "Kingston upon Hull, City of",
-                             TRUE ~ la_name))
+  select(-c(region_code,
+            region_name,
+            la_code,
+            la_name)) %>% 
+  inner_join(offers_la)
 
 # Check the results
 offers %>% 
@@ -575,7 +564,6 @@ offers %>%
   distinct() %>% 
   arrange(la_name, la_code)
 ```
-
 
 ```{r offers-review-year}
 # Review the unique values of year
@@ -789,8 +777,13 @@ These columns can all come from the `offers` and `info` data frames.
 
 ```{r dim-la-build}
 # Build out the local authority dimension table
-dim_la <- info_la %>% 
-  full_join(offers_la) %>% 
+dim_la <- offers_la %>% 
+  select(la_code,
+         la_name, 
+         region_code,
+         region_name) %>% 
+  distinct() %>% 
+  full_join(info_la) %>% 
   mutate(region_code = case_when(la_code == 420 ~ "E12000009",
                                  TRUE ~ region_code),
          region_name = case_when(la_code == 420 ~ "South West",
