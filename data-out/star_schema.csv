@@ -1,0 +1,90 @@
+source_table,source_field,source_value_example
+info,urn,131560
+info,la_code,891
+info,la_name,Nottinghamshire
+info,establishment_number,3793
+info,establishment_name,Blidworth Oaks Primary School
+info,establishment_type,Community school
+info,establishment_type_group,Local authority maintained schools
+info,establishment_status,"Open, but proposed to close"
+info,open_date,13604
+info,close_date,19204
+info,education_phase,Primary
+info,statutory_low_age,2
+info,statutory_high_age,11
+info,gender,Mixed
+info,religious_character,Does not apply
+info,admissions_policy,Not applicable
+info,school_capacity,315
+info,number_of_pupils,382
+info,number_of_boys,208
+info,number_of_girls,174
+info,percentage_fsm,30.6
+info,ofsted_last_insp,17344
+info,last_changed_date,19166
+info,street,Haywood Avenue
+info,locality,Blidworth
+info,address3,Blidworth Oaks Primary School
+info,town,Mansfield
+info,county,Nottinghamshire
+info,postcode,NG21 0RE
+info,school_website,www.blidworthoaks.co.uk
+info,telephone_num,01623792348
+info,head_title,Mr
+info,head_first_name,Shaun
+info,head_last_name,Walker
+info,head_preferred_job_title,Headteacher
+info,gor,East Midlands
+info,administrative_district,Newark and Sherwood
+info,administrative_ward,Rainworth South & Blidworth
+info,parliamentary_constituency,Sherwood
+info,urban_rural_indicator,(England/Wales) Rural town and fringe
+info,gss_la_code,E10000024
+info,easting,459277
+info,northing,356444
+info,msoa,Newark and Sherwood 006
+info,lsoa,Newark and Sherwood 006B
+info,ofsted_rating,Good
+info,msoa_code,E02005898
+info,lsoa_code,E01028298
+info,number_of_fsm,102
+info,ofsted_rating_score,2
+offers,year,2022
+offers,region_code,E13000001
+offers,region_name,Inner London
+offers,la_code,201
+offers,la_name,City of London
+offers,number_of_preferences,6
+offers,total_number_places_offered,30
+offers,number_preferred_offers,30
+offers,number_1st_preference_offers,30
+offers,number_2nd_preference_offers,0
+offers,number_3rd_preference_offers,0
+offers,times_put_as_any_preferred_school,81
+offers,times_put_as_1st_preference,42
+offers,times_put_as_2nd_preference,16
+offers,times_put_as_3rd_preference,6
+offers,proportion_1stprefs_v_1stprefoffers,1.4
+offers,proportion_1stprefs_v_totaloffers,1.4
+offers,all_applications_from_another_la,62
+offers,offers_to_applicants_from_another_la,16
+offers,religious_denomination,Faith
+offers,urn,1e+05
+offers,nc_year,R
+performance,year,2015
+performance,urn,137157
+performance,reading_progress,2.8
+performance,writing_progress,4
+performance,maths_progress,0.5
+performance,progress_8,0.47
+performance,attainment_8,65
+phase,phase_key,1
+phase,phase_name,Primary
+phase,phase_intake_year,Reception
+phase,performance_key_stage,KS2
+calendar,year_key,2000
+calendar,academic_year_start,2000
+calendar,academic_year_end,2001
+calendar,academic_year_full,2000-2001
+calendar,academic_year_short,00-01
+calendar,covid_indicator,Pre-Pandemic
