@@ -63,6 +63,8 @@ This data frame has `r nrow(src_info)` rows and `r ncol(src_info)` columns. The 
 
 ## Offers
 
+### By School
+
 This file contains data relating to the number of offers made to applicants for secondary and primary school places since 2014, and the proportion which received preferred offers. Data is aggregated at the school level. Further details including an explanation of the terminology used in this dataset can be found [here](https://drive.google.com/drive/u/1/folders/1bbnbd9d4HDn3yXIIhaRSigZV46KpCyKy). Once again, we can connect to it through Google Drive.
 
 ```{r offers-read}
@@ -72,6 +74,16 @@ src_offers <- read_csv_gdrive(src_offers_path)
 ```
 
 From the code outputs above, we can see that this data frame has `r nrow(src_offers)` rows and `r ncol(src_offers)` columns (a mix of character and numeric data types). The columns include some identifiers for time, geography and school, some descriptive dimensions for the number of preferences and type of school and some measures relating to the number of applications and offers made. Each row represents a single school for a single academic year.
+
+### By Local Authority
+
+This file is the same as the one above except that here, the data is aggregated at the local authority level. This file will be important as our single source of truth for local authority-level measures (e.g. the number of preferences allowed on the application form).
+
+```{r offersla-read}
+# Read in the source data for offers_la
+src_offersla_path <- "https://drive.google.com/file/d/12jONhUf3xSZdRbsUE_4tZRA014sIHO_D/view?usp=sharing"
+src_offersla <- read_csv_gdrive(src_offersla_path)
+```
 
 ## Performance
 
@@ -435,6 +447,56 @@ unique(info$ofsted_rating_score)
 ```
 
 ## Offers
+
+### By Local Authority
+From the `src_offersla` we only need to keep the identifiers for local authority, year and phase as well as the number of preferences. We should also filter the source data to keep only data at the `geographic_level` of "Local authority".
+
+```{r offersla-select-cols}
+# Select the required columns from offers_la
+offers_la <- src_offersla %>% 
+  filter(geographic_level == "Local authority") %>% 
+  select(time_period,
+         region_code,
+         region_name,
+         new_la_code,
+         old_la_code,
+         la_name,
+         school_phase,
+         no_of_preferences)
+```
+
+Now we can rename the columns more appropriately.
+
+```{r offersla-rename}
+# Rename the columns
+offers_la <- offers_la %>% 
+  rename(year = time_period,
+         gss_la_code = new_la_code,
+         la_code = old_la_code,
+         phase = school_phase,
+         number_of_preferences = no_of_preferences)
+```
+
+Now we can check and correct the data types.
+
+```{r offersla-type}
+# Correct data types in offers_la
+offers_la <- offers_la %>% 
+  mutate(number_of_preferences = as.numeric(number_of_preferences))
+```
+
+Now let's review the entries for the local authority identifiers.
+
+```{r offersla-la-names}
+# Review the unique values of la_name
+offers_la %>% 
+  select(la_code, gss_la_code, la_name) %>% 
+  distinct() %>% 
+  arrange(la_name, la_code)
+```
+
+
+### By School
 
 Let's keep only the columns we need from `src_offers`. Some of the columns are duplicates of columns already in the `info` table, and some are just not required.
 
