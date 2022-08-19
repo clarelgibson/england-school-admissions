@@ -7,16 +7,22 @@ output:
     toc_depth: 3
 ---
 
-```{r setup, include=FALSE}
-# Load knitr package
-library(knitr)
+# Setup
+```{r setup}
+# Load packages
+library(knitr)          # for Rmd options
+library(tidyverse)      # for general wrangling
+library(data.table)     # for transposing data frames
+library(janitor)        # for cleaning column headers
+library(lubridate)      # for working with dates
+library(googlesheets4)  # for reading in Google Sheets files
 
 # Knitr Options
-opts_chunk$set(
+knitr::opts_chunk$set(
 	echo = TRUE,
+	fig.align = "center",
 	message = FALSE,
-	warning = FALSE,
-	fig.align = 'center'
+	warning = FALSE
 )
 ```
 
@@ -29,17 +35,6 @@ The notebook begins by reading in the source data required for the dashboards. I
 ## Source data
 
 The full list of data sources, download links and retrieval steps can be found in the [project wiki](https://github.com/clarelgibson/england-school-admissions/wiki/Source-data).
-
-## Required packages
-
-```{r packages}
-# Packages
-library(tidyverse)      # for general wrangling
-library(data.table)     # for transposing data frames
-library(janitor)        # for cleaning column headers
-library(lubridate)      # for working with dates
-library(googlesheets4)  # for reading in Google Sheets files
-```
 
 ## Custom functions
 
@@ -627,6 +622,22 @@ offers <- offers %>%
 # Check the results
 unique(offers$phase)
 ```
+
+There are some inconsistencies in the `number_of_preferences` recorded for each Local Authority. For each group of year and local authority, the number of preferences value should be the same. We need to clean this so that the most common occurence of the value for `number_of_preferences` is used for all LA within a given year.
+
+```{r offers-clean-num-prefs}
+# View the current state
+offers_prefs <- offers %>%
+  group_by(year, la_code) %>% 
+  summarise(n_distinct_prefs = n_distinct(number_of_preferences)) %>% 
+  filter(n_distinct_prefs > 1)
+
+offers %>% 
+  filter(year %in% offers_prefs$year,
+         la_code %in% offers_prefs$la_code) %>% 
+  count(year, la_code, number_of_preferences)
+```
+
 
 ## Performance
 
