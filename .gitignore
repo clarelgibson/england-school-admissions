@@ -42,5 +42,11 @@ vignettes/*.pdf
 # MacOS files
 .DS_Store
 
+<<<<<<< HEAD
+=======
+# Data-out
+/data-out
+
+>>>>>>> d8fb716b007e239de3cf73685ac620063a346c22
 # Sandbox
 sandbox.R
