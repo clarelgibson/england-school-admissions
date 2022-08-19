@@ -415,6 +415,88 @@ info %>%
     ## 48                  lsoa_code         15565
     ## 49              number_of_fsm           525
 
+The `la_name` and `la_code` fields need to be checked to ensure they are
+consistent. I refer to the [Office for National
+Statistics](https://www.ons.gov.uk) [Local Authority Districts (December
+2021) Names and Codes in the United
+Kingdom](https://geoportal.statistics.gov.uk/documents/c4f647d8a4a648d7b4a1ebf057f8aaa3/about)
+document for the latest reference data for these fields. This document
+is included in the Google Drive [ref
+folder](https://drive.google.com/drive/folders/1lsRDMfjSzabSF8HVJdF8ex5JM6rDRlSo?usp=sharing).
+
+``` r
+# Read in the reference file for local authority names
+src_la_ref_path <- "https://docs.google.com/spreadsheets/d/1Atbagsqr0KJZV5xWh64zzM3aHR9BK-Xzvawgw46jYPc/edit?usp=sharing"
+src_la_ref <- read_sheet(src_la_ref_path)
+
+head(src_la_ref)
+```
+
+    ## # A tibble: 6 × 3
+    ##   LAD21CD   LAD21NM              LAD21NMW
+    ##   <chr>     <chr>                <chr>   
+    ## 1 E06000001 Hartlepool           <NA>    
+    ## 2 E06000002 Middlesbrough        <NA>    
+    ## 3 E06000003 Redcar and Cleveland <NA>    
+    ## 4 E06000004 Stockton-on-Tees     <NA>    
+    ## 5 E06000005 Darlington           <NA>    
+    ## 6 E06000006 Halton               <NA>
+
+``` r
+# Clean the LA reference table
+la_ref <- src_la_ref %>% 
+  select(gss_la_code = LAD21CD,
+         la_name = LAD21NM) %>% 
+  arrange(la_name)
+```
+
+Now, let’s review the unique values of LA code and name in the `info`
+df.
+
+``` r
+# Review the unique values in la_name
+info %>% 
+  select(la_code, gss_la_code, la_name) %>% 
+  distinct() %>% 
+  arrange(la_name, la_code, gss_la_code)
+```
+
+    ## # A tibble: 184 × 3
+    ##    la_code gss_la_code la_name                     
+    ##      <dbl> <chr>       <chr>                       
+    ##  1     301 E09000002   Barking and Dagenham        
+    ##  2     302 E09000003   Barnet                      
+    ##  3     302 X999999     Barnet                      
+    ##  4     370 E08000016   Barnsley                    
+    ##  5     800 E06000022   Bath and North East Somerset
+    ##  6     800 X999999     Bath and North East Somerset
+    ##  7     822 E06000055   Bedford                     
+    ##  8     303 E09000004   Bexley                      
+    ##  9     330 E08000025   Birmingham                  
+    ## 10     330 X999999     Birmingham                  
+    ## # … with 174 more rows
+    ## # ℹ Use `print(n = ...)` to see more rows
+
+We can see that some of the `gss-la-code` values here are wrong. It
+looks like a value of `X999999` has been used where the true value could
+not be determined when the source data was put together. We need to
+replace this value with the correct value according to the reference
+table.
+
+``` r
+# Correct the erroneous gss_la_code fields
+info <- info %>% 
+  group_by(la_code, la_name) %>% 
+  mutate(gss_la_code = min(gss_la_code)) %>% 
+  ungroup()
+
+# Check the results
+info_la <- info %>% 
+  select(la_code, gss_la_code, la_name) %>% 
+  distinct() %>% 
+  arrange(la_name, la_code, gss_la_code)
+```
+
 Some columns have relatively few unique values, making these columns
 clearly categorical. I’d like to review the values to ensure they are
 consistent and well labelled.
@@ -699,7 +781,7 @@ offers <- offers %>%
 ```
 
 Let’s now review the selected column headings in this dataset and the
-number of unique values in each column
+number of unique values in each column.
 
 ``` r
 # Print a list of the column headings in the offers df
@@ -735,6 +817,98 @@ offers %>%
 
 Let’s review the categorical values to ensure they are consistent and
 well labelled.
+
+``` r
+# Review the unique values of la_name
+offers %>% 
+  select(la_code, la_name) %>% 
+  distinct() %>% 
+  arrange(la_name, la_code)
+```
+
+    ## # A tibble: 160 × 2
+    ##    la_code la_name                     
+    ##      <dbl> <chr>                       
+    ##  1     301 Barking and Dagenham        
+    ##  2     302 Barnet                      
+    ##  3     370 Barnsley                    
+    ##  4     800 Bath and North East Somerset
+    ##  5     822 Bedford                     
+    ##  6     303 Bexley                      
+    ##  7     330 Birmingham                  
+    ##  8     889 Blackburn with Darwen       
+    ##  9     890 Blackpool                   
+    ## 10     350 Bolton                      
+    ## # … with 150 more rows
+    ## # ℹ Use `print(n = ...)` to see more rows
+
+Some of these entries need to be corrected to match the values in
+`info`.
+
+``` r
+offers_la <- offers %>% 
+  select(urn,
+         year,
+         la_code,
+         la_name,
+         region_code,
+         region_name) %>% 
+  distinct() %>% 
+  arrange(urn,
+          -year,
+          la_code,
+          la_name) %>% 
+  group_by(urn) %>% 
+  slice_head(n = 1) %>% 
+  ungroup() %>%
+  inner_join(brg_school,
+            by = c("urn" = "linked_urn")) %>% 
+  left_join(select(info,
+                   master_urn = urn,
+                   master_la_code = la_code,
+                   master_la_name = la_name)) %>% 
+  mutate(la_code = coalesce(master_la_code, la_code),
+         la_name = coalesce(master_la_name, la_name)) %>% 
+  select(urn,
+         master_urn,
+         #year,
+         la_code,
+         la_name,
+         region_code,
+         region_name) %>% 
+  distinct()
+```
+
+``` r
+offers <- offers %>% 
+  select(-c(region_code,
+            region_name,
+            la_code,
+            la_name)) %>% 
+  inner_join(offers_la)
+
+# Check the results
+offers %>% 
+  select(la_code, la_name) %>% 
+  distinct() %>% 
+  arrange(la_name, la_code)
+```
+
+    ## # A tibble: 151 × 2
+    ##    la_code la_name                     
+    ##      <dbl> <chr>                       
+    ##  1     301 Barking and Dagenham        
+    ##  2     302 Barnet                      
+    ##  3     370 Barnsley                    
+    ##  4     800 Bath and North East Somerset
+    ##  5     822 Bedford                     
+    ##  6     303 Bexley                      
+    ##  7     330 Birmingham                  
+    ##  8     889 Blackburn with Darwen       
+    ##  9     890 Blackpool                   
+    ## 10     350 Bolton                      
+    ## # … with 141 more rows
+    ## # ℹ Use `print(n = ...)` to see more rows
 
 ``` r
 # Review the unique values of year
@@ -775,22 +949,22 @@ offers %>%
   head()
 ```
 
-    ## # A tibble: 6 × 22
-    ##    year region…¹ regio…² la_code la_name numbe…³ total…⁴ numbe…⁵ numbe…⁶ numbe…⁷
-    ##   <dbl> <chr>    <chr>     <dbl> <chr>     <dbl>   <dbl>   <dbl>   <dbl>   <dbl>
-    ## 1  2022 E120000… South …     803 South …       3      61      61      61       0
-    ## 2  2022 E120000… East M…     830 Derbys…       3      30      30      29       1
-    ## 3  2022 E120000… South …     865 Wiltsh…       3      30      30      29       1
-    ## 4  2022 E120000… South …     865 Wiltsh…       3      35      34      32       2
-    ## 5  2022 E120000… South …     866 Swindon       3      59      59      58       1
-    ## 6  2022 E120000… South …     867 Brackn…       3      30      30      30       0
-    ## # … with 12 more variables: number_3rd_preference_offers <dbl>,
-    ## #   times_put_as_any_preferred_school <dbl>, times_put_as_1st_preference <dbl>,
-    ## #   times_put_as_2nd_preference <dbl>, times_put_as_3rd_preference <dbl>,
+    ## # A tibble: 6 × 23
+    ##    year number…¹ total…² numbe…³ numbe…⁴ numbe…⁵ numbe…⁶ times…⁷ times…⁸ times…⁹
+    ##   <dbl>    <dbl>   <dbl>   <dbl>   <dbl>   <dbl>   <dbl>   <dbl>   <dbl>   <dbl>
+    ## 1  2022        3      61      61      61       0       0     132      98      20
+    ## 2  2022        3      30      30      29       1       0     101      44      47
+    ## 3  2022        3      30      30      29       1       0      79      38      32
+    ## 4  2022        3      35      34      32       2       0      68      32      20
+    ## 5  2022        3      59      59      58       1       0     137      68      57
+    ## 6  2022        3      30      30      30       0       0     112      36      49
+    ## # … with 13 more variables: times_put_as_3rd_preference <dbl>,
     ## #   proportion_1stprefs_v_1stprefoffers <dbl>,
     ## #   proportion_1stprefs_v_totaloffers <dbl>,
     ## #   all_applications_from_another_la <dbl>,
-    ## #   offers_to_applicants_from_another_la <dbl>, religious_denomination <chr>, …
+    ## #   offers_to_applicants_from_another_la <dbl>, religious_denomination <chr>,
+    ## #   urn <dbl>, phase <chr>, master_urn <dbl>, la_code <dbl>, la_name <chr>,
+    ## #   region_code <chr>, region_name <chr>, and abbreviated variable names …
     ## # ℹ Use `colnames()` to see all variable names
 
 I guess this must be for schools who did not report their denomination.
@@ -1045,34 +1219,23 @@ star_schema %>%
 These columns can all come from the `offers` and `info` data frames.
 
 ``` r
-# Define columns to include
-dim_la_cols_offers <- star_schema %>% 
-  filter(model_table == "dim_la",
-         source_table == "offers") %>% 
-  pull(source_field)
-
-dim_la_cols_info <- star_schema %>% 
-  filter(model_table == "dim_la",
-         source_table == "info") %>% 
-  pull(source_field)
-
-# Define which rows from offers should be joined (as there can be more than
-# one record per URN)
-dim_la_offers <- offers %>% 
-  select(all_of(dim_la_cols_offers)) %>% 
-  distinct()
-
 # Build out the local authority dimension table
-dim_la <- info %>% 
-  select(all_of(dim_la_cols_info)) %>% 
+dim_la <- offers_la %>% 
+  select(la_code,
+         la_name, 
+         region_code,
+         region_name) %>% 
   distinct() %>% 
-  group_by(la_code, la_name) %>% 
-  slice_min(gss_la_code) %>% 
-  ungroup() %>% 
-  full_join(dim_la_offers)
-
-# Replace NA in dim_la
-dim_la$gss_la_code[is.na(dim_la$gss_la_code)] <- "Not reported"
+  full_join(info_la) %>% 
+  mutate(region_code = case_when(la_code == 420 ~ "E12000009",
+                                 TRUE ~ region_code),
+         region_name = case_when(la_code == 420 ~ "South West",
+                                 TRUE ~ region_name)) %>% 
+  select(la_code,
+         la_name,
+         gss_la_code,
+         region_code,
+         region_name)
 
 # Check the result
 head(dim_la)
@@ -1088,46 +1251,8 @@ head(dim_la)
     ## 5     205 Hammersmith and Fulham E09000013   E13000001   Inner London
     ## 6     206 Islington              E09000019   E13000001   Inner London
 
-Note that `la_code` is not unique.
-
-``` r
-# How many values of la_code are not unique?
-dim_la %>% 
-  count(la_code) %>% 
-  filter(n > 1)
-```
-
-    ## # A tibble: 7 × 2
-    ##   la_code     n
-    ##     <dbl> <int>
-    ## 1     203     2
-    ## 2     801     2
-    ## 3     810     2
-    ## 4     839     2
-    ## 5     840     2
-    ## 6     884     2
-    ## 7     928     2
-
-Let’s check if `la_name` is unique.
-
-``` r
-# Is LA name unique?
-dim_la %>% 
-  count(la_name) %>% 
-  filter(n > 1)
-```
-
-    ## # A tibble: 3 × 2
-    ##   la_name       n
-    ##   <chr>     <int>
-    ## 1 Dorset        2
-    ## 2 Norfolk       2
-    ## 3 Wokingham     2
-
-This means that, over time, some codes have been recycled and used for
-different local authorities, and some local authorities have had changes
-in code. Let’s assign a unique key to each record, and add a record for
-the `null` case, which we’ll call `Not reported`.
+Let’s assign a unique key to each record, and add a record for the
+`null` case, which we’ll call `Not reported`.
 
 ``` r
 # Specify the null value
@@ -1435,7 +1560,7 @@ fct_school_year <- offers %>%
                    phase_name = phase,
                    all_of(fct_school_year_cols_perf))) %>% 
   # join school key (via bridge)
-  left_join(brg_school) %>% 
+  inner_join(brg_school) %>% 
   left_join(select(dim_school,
                    master_urn = urn,
                    school_key)) %>% 
