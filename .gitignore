@@ -41,3 +41,6 @@ vignettes/*.pdf
 
 # MacOS files
 .DS_Store
+
+# Sandbox
+sandbox.R
