@@ -2,21 +2,26 @@ Source data preparation for the England school admissions dashboard
 ================
 Clare Gibson
 
+-   <a href="#setup" id="toc-setup">Setup</a>
 -   <a href="#introduction" id="toc-introduction">Introduction</a>
     -   <a href="#source-data" id="toc-source-data">Source data</a>
-    -   <a href="#required-packages" id="toc-required-packages">Required
-        packages</a>
     -   <a href="#custom-functions" id="toc-custom-functions">Custom
         functions</a>
 -   <a href="#read-data" id="toc-read-data">Read data</a>
     -   <a href="#info" id="toc-info">Info</a>
     -   <a href="#offers" id="toc-offers">Offers</a>
+        -   <a href="#by-school" id="toc-by-school">By School</a>
+        -   <a href="#by-local-authority" id="toc-by-local-authority">By Local
+            Authority</a>
     -   <a href="#performance" id="toc-performance">Performance</a>
     -   <a href="#phase" id="toc-phase">Phase</a>
     -   <a href="#calendar" id="toc-calendar">Calendar</a>
 -   <a href="#clean-data" id="toc-clean-data">Clean data</a>
     -   <a href="#info-1" id="toc-info-1">Info</a>
     -   <a href="#offers-1" id="toc-offers-1">Offers</a>
+        -   <a href="#by-local-authority-1" id="toc-by-local-authority-1">By Local
+            Authority</a>
+        -   <a href="#by-school-1" id="toc-by-school-1">By School</a>
     -   <a href="#performance-1" id="toc-performance-1">Performance</a>
     -   <a href="#phase-1" id="toc-phase-1">Phase</a>
     -   <a href="#calendar-1" id="toc-calendar-1">Calendar</a>
@@ -31,6 +36,79 @@ Clare Gibson
         -   <a href="#school-year-facts" id="toc-school-year-facts">School Year
             Facts</a>
 -   <a href="#export-data" id="toc-export-data">Export data</a>
+
+# Setup
+
+``` r
+# Load packages
+library(knitr)          # for Rmd options
+library(tidyverse)      # for general wrangling
+```
+
+    ## ── Attaching packages ─────────────────────────────────────── tidyverse 1.3.1 ──
+
+    ## ✔ ggplot2 3.3.6     ✔ purrr   0.3.4
+    ## ✔ tibble  3.1.8     ✔ dplyr   1.0.9
+    ## ✔ tidyr   1.2.0     ✔ stringr 1.4.0
+    ## ✔ readr   2.1.2     ✔ forcats 0.5.1
+
+    ## ── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
+    ## ✖ dplyr::filter() masks stats::filter()
+    ## ✖ dplyr::lag()    masks stats::lag()
+
+``` r
+library(data.table)     # for transposing data frames
+```
+
+    ## 
+    ## Attaching package: 'data.table'
+
+    ## The following objects are masked from 'package:dplyr':
+    ## 
+    ##     between, first, last
+
+    ## The following object is masked from 'package:purrr':
+    ## 
+    ##     transpose
+
+``` r
+library(janitor)        # for cleaning column headers
+```
+
+    ## 
+    ## Attaching package: 'janitor'
+
+    ## The following objects are masked from 'package:stats':
+    ## 
+    ##     chisq.test, fisher.test
+
+``` r
+library(lubridate)      # for working with dates
+```
+
+    ## 
+    ## Attaching package: 'lubridate'
+
+    ## The following objects are masked from 'package:data.table':
+    ## 
+    ##     hour, isoweek, mday, minute, month, quarter, second, wday, week,
+    ##     yday, year
+
+    ## The following objects are masked from 'package:base':
+    ## 
+    ##     date, intersect, setdiff, union
+
+``` r
+library(googlesheets4)  # for reading in Google Sheets files
+
+# Knitr Options
+knitr::opts_chunk$set(
+    echo = TRUE,
+    fig.align = "center",
+    message = FALSE,
+    warning = FALSE
+)
+```
 
 # Introduction
 
@@ -48,17 +126,6 @@ clean and prepare the data for transfer to Tableau.
 The full list of data sources, download links and retrieval steps can be
 found in the [project
 wiki](https://github.com/clarelgibson/england-school-admissions/wiki/Source-data).
-
-## Required packages
-
-``` r
-# Packages
-library(tidyverse)      # for general wrangling
-library(data.table)     # for transposing data frames
-library(janitor)        # for cleaning column headers
-library(lubridate)      # for working with dates
-library(googlesheets4)  # for reading in Google Sheets files
-```
 
 ## Custom functions
 
@@ -105,6 +172,8 @@ represents the latest available.
 
 ## Offers
 
+### By School
+
 This file contains data relating to the number of offers made to
 applicants for secondary and primary school places since 2014, and the
 proportion which received preferred offers. Data is aggregated at the
@@ -125,6 +194,19 @@ columns include some identifiers for time, geography and school, some
 descriptive dimensions for the number of preferences and type of school
 and some measures relating to the number of applications and offers
 made. Each row represents a single school for a single academic year.
+
+### By Local Authority
+
+This file is the same as the one above except that here, the data is
+aggregated at the local authority level. This file will be important as
+our single source of truth for local authority-level measures (e.g. the
+number of preferences allowed on the application form).
+
+``` r
+# Read in the source data for offers_la
+src_prefs_path <- "https://drive.google.com/file/d/12jONhUf3xSZdRbsUE_4tZRA014sIHO_D/view?usp=sharing"
+src_prefs <- read_csv_gdrive(src_prefs_path)
+```
 
 ## Performance
 
@@ -724,6 +806,160 @@ unique(info$ofsted_rating_score)
 
 ## Offers
 
+### By Local Authority
+
+From the `src_offersla` we only need to keep the identifiers for local
+authority, year and phase as well as the number of preferences. We
+should also filter the source data to keep only data at the
+`geographic_level` of “Local authority”.
+
+``` r
+# Select the required columns from prefs
+prefs <- src_prefs %>% 
+  filter(geographic_level == "Local authority") %>% 
+  select(time_period,
+         region_code,
+         region_name,
+         new_la_code,
+         old_la_code,
+         la_name,
+         school_phase,
+         no_of_preferences)
+```
+
+Now we can rename the columns more appropriately.
+
+``` r
+# Rename the columns
+prefs <- prefs %>% 
+  rename(year = time_period,
+         gss_la_code = new_la_code,
+         la_code = old_la_code,
+         phase = school_phase,
+         number_of_preferences = no_of_preferences)
+```
+
+Now we can check and correct the data types.
+
+``` r
+# Correct data types in offers_la
+prefs <- prefs %>% 
+  mutate(number_of_preferences = as.numeric(number_of_preferences))
+```
+
+Now let’s review the entries for the local authority identifiers and
+check which rows in `prefs` are not present in `info_la` and therefore
+need to be changed.
+
+``` r
+# Review the unique values of la_name
+prefs %>% 
+  select(la_code, gss_la_code, la_name) %>% 
+  distinct() %>% 
+  arrange(la_name, la_code) %>% 
+  anti_join(info_la)
+```
+
+    ## # A tibble: 7 × 3
+    ##   la_code gss_la_code la_name         
+    ##     <dbl> <chr>       <chr>           
+    ## 1     837 E06000028   Bournemouth     
+    ## 2     825 E10000002   Buckinghamshire 
+    ## 3     835 E10000009   Dorset          
+    ## 4     390 E08000020   Gateshead       
+    ## 5     928 E10000021   Northamptonshire
+    ## 6     929 E06000048   Northumberland  
+    ## 7     836 E06000029   Poole
+
+Let’s make the necessary replacements.
+
+``` r
+# Recode the LA identifier fields in prefs_la
+prefs <- prefs %>% 
+  mutate(
+    la_code = case_when(
+      la_code == 837 ~ 839,
+      la_code == 835 ~ 838,
+      la_code == 928 ~ 940,
+      la_code == 836 ~ 839,
+      TRUE ~ la_code
+    ),
+    gss_la_code = case_when(
+      gss_la_code == "E06000028" ~ "E06000058",
+      gss_la_code == "E10000002" ~ "E06000060",
+      gss_la_code == "E10000009" ~ "E06000059",
+      gss_la_code == "E08000020" ~ "E08000037",
+      gss_la_code == "E10000021" ~ "E06000061",
+      gss_la_code == "E06000048" ~ "E06000057",
+      gss_la_code == "E06000029" ~ "E06000058",
+      TRUE ~ gss_la_code
+    ),
+    la_name = case_when(
+      la_name == "Bournemouth" ~ "Bournemouth, Christchurch and Poole",
+      la_name == "Northamptonshire" ~ "North Northamptonshire",
+      la_name == "Poole" ~ "Bournemouth, Christchurch and Poole",
+      TRUE ~ la_name
+    )
+  )
+
+# Extra rows because Northamptonshire is now two distinct regions
+prefs_extra <- tibble(
+  year = c(202122, 202122, 202021, 202021, 201920, 201920, 201819, 201819,
+           201718, 201718, 201617, 201617, 201516, 201516, 201415, 201415),
+  region_code = rep("E12000004", 16),
+  region_name = rep("East Midlands", 16),
+  gss_la_code = rep("E06000062", 16),
+  la_code = rep(941, 16),
+  la_name = rep("West Northamptonshire", 16),
+  phase = rep(c("Primary", "Secondary"), 8),
+  number_of_preferences = rep(3,16)
+)
+
+# Bind extra rows on to prefs
+prefs <- prefs %>% 
+  bind_rows(prefs_extra) %>% 
+  group_by_at(vars(-number_of_preferences)) %>% 
+  slice_max(number_of_preferences) %>% 
+  ungroup() %>% 
+  distinct()
+
+# Check the results
+prefs_la <- prefs %>% 
+  select(la_code, gss_la_code, la_name) %>% 
+  distinct() %>% 
+  arrange(la_name, la_code) 
+
+prefs_la %>% 
+  anti_join(info_la)
+```
+
+    ## # A tibble: 0 × 3
+    ## # … with 3 variables: la_code <dbl>, gss_la_code <chr>, la_name <chr>
+    ## # ℹ Use `colnames()` to see all variable names
+
+``` r
+# Review the unique values of year
+unique(prefs$year)
+```
+
+    ## [1] 201415 201516 201617 201718 201819 201920 202021 202122 202223
+
+These values should be recoded to match the `year_key` in the calendar
+table. We need to extract the academic start year, which is the first 4
+digits of the value.
+
+``` r
+# Recode the values in year
+prefs$year <- as.numeric(str_extract(prefs$year, "^\\d{4}"))
+
+# Check the results
+unique(prefs$year)
+```
+
+    ## [1] 2014 2015 2016 2017 2018 2019 2020 2021 2022
+
+### By School
+
 Let’s keep only the columns we need from `src_offers`. Some of the
 columns are duplicates of columns already in the `info` table, and some
 are just not required.
@@ -735,8 +971,8 @@ offers <- src_offers %>%
          region_code,
          region_name,
          old_la_code,
+         new_la_code,
          la_name,
-         number_preferences_la,
          total_number_places_offered:offers_to_applicants_from_another_la,
          denomination,
          school_urn,
@@ -750,7 +986,7 @@ Next we can rename the columns more appropriately.
 offers <- offers %>% 
   rename(year = time_period,
          la_code = old_la_code,
-         number_of_preferences = number_preferences_la,
+         gss_la_code = new_la_code,
          religious_denomination = denomination,
          urn = school_urn,
          phase = entry_year)
@@ -770,8 +1006,7 @@ Now we can check and correct the data types.
 
 ``` r
 # Define cols to be converted
-offers_num <- c("number_of_preferences",
-                "proportion_1stprefs_v_1stprefoffers",
+offers_num <- c("proportion_1stprefs_v_1stprefoffers",
                 "proportion_1stprefs_v_totaloffers",
                 "offers_to_applicants_from_another_la")
 
@@ -796,8 +1031,8 @@ offers %>%
     ## 2                           region_code            10
     ## 3                           region_name            10
     ## 4                               la_code           155
-    ## 5                               la_name           157
-    ## 6                 number_of_preferences             5
+    ## 5                           gss_la_code           155
+    ## 6                               la_name           157
     ## 7           total_number_places_offered           425
     ## 8               number_preferred_offers           425
     ## 9          number_1st_preference_offers           403
@@ -821,24 +1056,24 @@ well labelled.
 ``` r
 # Review the unique values of la_name
 offers %>% 
-  select(la_code, la_name) %>% 
+  select(la_code, gss_la_code, la_name) %>% 
   distinct() %>% 
   arrange(la_name, la_code)
 ```
 
-    ## # A tibble: 160 × 2
-    ##    la_code la_name                     
-    ##      <dbl> <chr>                       
-    ##  1     301 Barking and Dagenham        
-    ##  2     302 Barnet                      
-    ##  3     370 Barnsley                    
-    ##  4     800 Bath and North East Somerset
-    ##  5     822 Bedford                     
-    ##  6     303 Bexley                      
-    ##  7     330 Birmingham                  
-    ##  8     889 Blackburn with Darwen       
-    ##  9     890 Blackpool                   
-    ## 10     350 Bolton                      
+    ## # A tibble: 160 × 3
+    ##    la_code gss_la_code la_name                     
+    ##      <dbl> <chr>       <chr>                       
+    ##  1     301 E09000002   Barking and Dagenham        
+    ##  2     302 E09000003   Barnet                      
+    ##  3     370 E08000016   Barnsley                    
+    ##  4     800 E06000022   Bath and North East Somerset
+    ##  5     822 E06000055   Bedford                     
+    ##  6     303 E09000004   Bexley                      
+    ##  7     330 E08000025   Birmingham                  
+    ##  8     889 E06000008   Blackburn with Darwen       
+    ##  9     890 E06000009   Blackpool                   
+    ## 10     350 E08000001   Bolton                      
     ## # … with 150 more rows
     ## # ℹ Use `print(n = ...)` to see more rows
 
@@ -850,6 +1085,7 @@ offers_la <- offers %>%
   select(urn,
          year,
          la_code,
+         gss_la_code,
          la_name,
          region_code,
          region_name) %>% 
@@ -866,13 +1102,15 @@ offers_la <- offers %>%
   left_join(select(info,
                    master_urn = urn,
                    master_la_code = la_code,
+                   master_gss_la_code = gss_la_code,
                    master_la_name = la_name)) %>% 
   mutate(la_code = coalesce(master_la_code, la_code),
+         gss_la_code = coalesce(master_gss_la_code, gss_la_code),
          la_name = coalesce(master_la_name, la_name)) %>% 
   select(urn,
          master_urn,
-         #year,
          la_code,
+         gss_la_code,
          la_name,
          region_code,
          region_name) %>% 
@@ -884,31 +1122,16 @@ offers <- offers %>%
   select(-c(region_code,
             region_name,
             la_code,
+            gss_la_code,
             la_name)) %>% 
   inner_join(offers_la)
 
 # Check the results
-offers %>% 
-  select(la_code, la_name) %>% 
+offers_la <- offers %>% 
+  select(la_code, gss_la_code, la_name) %>% 
   distinct() %>% 
   arrange(la_name, la_code)
 ```
-
-    ## # A tibble: 151 × 2
-    ##    la_code la_name                     
-    ##      <dbl> <chr>                       
-    ##  1     301 Barking and Dagenham        
-    ##  2     302 Barnet                      
-    ##  3     370 Barnsley                    
-    ##  4     800 Bath and North East Somerset
-    ##  5     822 Bedford                     
-    ##  6     303 Bexley                      
-    ##  7     330 Birmingham                  
-    ##  8     889 Blackburn with Darwen       
-    ##  9     890 Blackpool                   
-    ## 10     350 Bolton                      
-    ## # … with 141 more rows
-    ## # ℹ Use `print(n = ...)` to see more rows
 
 ``` r
 # Review the unique values of year
@@ -950,21 +1173,21 @@ offers %>%
 ```
 
     ## # A tibble: 6 × 23
-    ##    year number…¹ total…² numbe…³ numbe…⁴ numbe…⁵ numbe…⁶ times…⁷ times…⁸ times…⁹
+    ##    year total_…¹ numbe…² numbe…³ numbe…⁴ numbe…⁵ times…⁶ times…⁷ times…⁸ times…⁹
     ##   <dbl>    <dbl>   <dbl>   <dbl>   <dbl>   <dbl>   <dbl>   <dbl>   <dbl>   <dbl>
-    ## 1  2022        3      61      61      61       0       0     132      98      20
-    ## 2  2022        3      30      30      29       1       0     101      44      47
-    ## 3  2022        3      30      30      29       1       0      79      38      32
-    ## 4  2022        3      35      34      32       2       0      68      32      20
-    ## 5  2022        3      59      59      58       1       0     137      68      57
-    ## 6  2022        3      30      30      30       0       0     112      36      49
-    ## # … with 13 more variables: times_put_as_3rd_preference <dbl>,
-    ## #   proportion_1stprefs_v_1stprefoffers <dbl>,
+    ## 1  2022       61      61      61       0       0     132      98      20      14
+    ## 2  2022       30      30      29       1       0     101      44      47      10
+    ## 3  2022       30      30      29       1       0      79      38      32       9
+    ## 4  2022       35      34      32       2       0      68      32      20      16
+    ## 5  2022       59      59      58       1       0     137      68      57      12
+    ## 6  2022       30      30      30       0       0     112      36      49      26
+    ## # … with 13 more variables: proportion_1stprefs_v_1stprefoffers <dbl>,
     ## #   proportion_1stprefs_v_totaloffers <dbl>,
     ## #   all_applications_from_another_la <dbl>,
     ## #   offers_to_applicants_from_another_la <dbl>, religious_denomination <chr>,
-    ## #   urn <dbl>, phase <chr>, master_urn <dbl>, la_code <dbl>, la_name <chr>,
-    ## #   region_code <chr>, region_name <chr>, and abbreviated variable names …
+    ## #   urn <dbl>, phase <chr>, master_urn <dbl>, la_code <dbl>, gss_la_code <chr>,
+    ## #   la_name <chr>, region_code <chr>, region_name <chr>, and abbreviated
+    ## #   variable names ¹​total_number_places_offered, ²​number_preferred_offers, …
     ## # ℹ Use `colnames()` to see all variable names
 
 I guess this must be for schools who did not report their denomination.
@@ -1009,6 +1232,14 @@ unique(offers$phase)
 ```
 
     ## [1] "Primary"   "Secondary"
+
+Finally, let’s join the number of preferences back into this dataset.
+
+``` r
+# Add number of preferences into offers
+offers <- offers %>% 
+  left_join(prefs)
+```
 
 ## Performance
 
@@ -1168,6 +1399,7 @@ in the model. The custom function `describe_df()` contained in the
 ``` r
 # Create a vector of dfs to describe
 data <- list("info" = info,
+             "prefs" = prefs,
              "offers" = offers,
              "performance" = performance,
              "phase" = phase,
@@ -1181,9 +1413,10 @@ t_data <- bind_rows(t_data, .id = "source_table")
 ```
 
 After exporting the new `t_data` dataframe to a spreadsheet, I created a
-file named [star-schema](ref/star-schema.csv) which maps the raw source
-data to the corresponding dimension and fact tables for the star schema
-model.
+file named
+[star-schema](https://docs.google.com/spreadsheets/d/1rrlhlvFrnPpTQtn2YzWyJZzwlm-2wWAzDiEv6fKBoHU/edit?usp=sharing)
+which maps the raw source data to the corresponding dimension and fact
+tables for the star schema model.
 
 ``` r
 # Read in star schema planning document
@@ -1211,17 +1444,24 @@ star_schema %>%
 | info         | la_code      | 891                  | dim_la      |
 | info         | la_name      | Nottinghamshire      | dim_la      |
 | info         | gss_la_code  | E10000024            | dim_la      |
+| prefs        | region_code  | E13000001            | dim_la      |
+| prefs        | region_name  | Inner London         | dim_la      |
+| prefs        | gss_la_code  | E09000001            | dim_la      |
+| prefs        | la_code      | 201                  | dim_la      |
+| prefs        | la_name      | City of London       | dim_la      |
 | offers       | region_code  | E13000001            | dim_la      |
 | offers       | region_name  | Inner London         | dim_la      |
 | offers       | la_code      | 201                  | dim_la      |
 | offers       | la_name      | City of London       | dim_la      |
+| offers       | gss_la_code  | E09000001            | dim_la      |
 
 These columns can all come from the `offers` and `info` data frames.
 
 ``` r
 # Build out the local authority dimension table
-dim_la <- offers_la %>% 
+dim_la <- offers %>% 
   select(la_code,
+         gss_la_code,
          la_name, 
          region_code,
          region_name) %>% 
@@ -1230,26 +1470,21 @@ dim_la <- offers_la %>%
   mutate(region_code = case_when(la_code == 420 ~ "E12000009",
                                  TRUE ~ region_code),
          region_name = case_when(la_code == 420 ~ "South West",
-                                 TRUE ~ region_name)) %>% 
-  select(la_code,
-         la_name,
-         gss_la_code,
-         region_code,
-         region_name)
+                                 TRUE ~ region_name))
 
 # Check the result
 head(dim_la)
 ```
 
     ## # A tibble: 6 × 5
-    ##   la_code la_name                gss_la_code region_code region_name 
-    ##     <dbl> <chr>                  <chr>       <chr>       <chr>       
-    ## 1     201 City of London         E09000001   E13000001   Inner London
-    ## 2     202 Camden                 E09000007   E13000001   Inner London
-    ## 3     203 Greenwich              E09000011   E13000002   Outer London
-    ## 4     204 Hackney                E09000012   E13000001   Inner London
-    ## 5     205 Hammersmith and Fulham E09000013   E13000001   Inner London
-    ## 6     206 Islington              E09000019   E13000001   Inner London
+    ##   la_code gss_la_code la_name                region_code region_name 
+    ##     <dbl> <chr>       <chr>                  <chr>       <chr>       
+    ## 1     201 E09000001   City of London         E13000001   Inner London
+    ## 2     202 E09000007   Camden                 E13000001   Inner London
+    ## 3     203 E09000011   Greenwich              E13000002   Outer London
+    ## 4     204 E09000012   Hackney                E13000001   Inner London
+    ## 5     205 E09000013   Hammersmith and Fulham E13000001   Inner London
+    ## 6     206 E09000019   Islington              E13000001   Inner London
 
 Let’s assign a unique key to each record, and add a record for the
 `null` case, which we’ll call `Not reported`.
@@ -1417,7 +1652,9 @@ star_schema %>%
 
 | source_table | source_field          | source_value_example | model_table |
 |:-------------|:----------------------|:---------------------|:------------|
+| prefs        | phase                 | Primary              | dim_phase   |
 | offers       | phase                 | Primary              | dim_phase   |
+| performance  | phase                 | Primary              | dim_phase   |
 | phase        | phase_key             | 1                    | dim_phase   |
 | phase        | phase_name            | Primary              | dim_phase   |
 | phase        | phase_intake_year     | Reception            | dim_phase   |
@@ -1467,8 +1704,6 @@ star_schema %>%
 
 These fields can all come from the `info` table.
 
-\# Build out the school fact table
-
 ``` r
 # Define columns to include
 fct_school_cols <- star_schema %>% 
@@ -1512,7 +1747,7 @@ star_schema %>%
 
 | source_table | source_field                         | source_value_example | model_table      |
 |:-------------|:-------------------------------------|:---------------------|:-----------------|
-| offers       | number_of_preferences                | 6                    | fact_school_year |
+| prefs        | number_of_preferences                | 6                    | fact_school_year |
 | offers       | total_number_places_offered          | 30                   | fact_school_year |
 | offers       | number_preferred_offers              | 30                   | fact_school_year |
 | offers       | number_1st_preference_offers         | 30                   | fact_school_year |
@@ -1532,7 +1767,7 @@ star_schema %>%
 | performance  | progress_8                           | 0.47                 | fact_school_year |
 | performance  | attainment_8                         | 65                   | fact_school_year |
 
-These columns all come from `offers` and `performance`.
+These columns all come from `offers`, `prefs` and `performance`.
 
 ``` r
 # Define columns to include
@@ -1559,6 +1794,11 @@ fct_school_year <- offers %>%
                    year,
                    phase_name = phase,
                    all_of(fct_school_year_cols_perf))) %>% 
+  left_join(select(prefs,
+                   year,
+                   la_code,
+                   phase_name = phase,
+                   number_of_preferences)) %>% 
   # join school key (via bridge)
   inner_join(brg_school) %>% 
   left_join(select(dim_school,
@@ -1579,7 +1819,8 @@ fct_school_year <- offers %>%
          year_key = year,
          phase_key,
          all_of(fct_school_year_cols_offers),
-         all_of(fct_school_year_cols_perf)) %>% 
+         all_of(fct_school_year_cols_perf),
+         number_of_preferences) %>% 
   # deal with duplicates
   group_by(school_key,
            la_key,

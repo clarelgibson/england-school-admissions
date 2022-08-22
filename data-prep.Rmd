@@ -1179,7 +1179,8 @@ fct_school_year <- offers %>%
          year_key = year,
          phase_key,
          all_of(fct_school_year_cols_offers),
-         all_of(fct_school_year_cols_perf)) %>% 
+         all_of(fct_school_year_cols_perf),
+         number_of_preferences) %>% 
   # deal with duplicates
   group_by(school_key,
            la_key,
