@@ -542,7 +542,11 @@ prefs_extra <- tibble(
 
 # Bind extra rows on to prefs
 prefs <- prefs %>% 
-  bind_rows(prefs_extra)
+  bind_rows(prefs_extra) %>% 
+  group_by_at(vars(-number_of_preferences)) %>% 
+  slice_max(number_of_preferences) %>% 
+  ungroup() %>% 
+  distinct()
 
 # Check the results
 prefs_la <- prefs %>% 
@@ -552,6 +556,21 @@ prefs_la <- prefs %>%
 
 prefs_la %>% 
   anti_join(info_la)
+```
+
+```{r prefs-review-year}
+# Review the unique values of year
+unique(prefs$year)
+```
+
+These values should be recoded to match the `year_key` in the calendar table. We need to extract the academic start year, which is the first 4 digits of the value.
+
+```{r prefs-recode-year}
+# Recode the values in year
+prefs$year <- as.numeric(str_extract(prefs$year, "^\\d{4}"))
+
+# Check the results
+unique(prefs$year)
 ```
 
 ### By School
@@ -746,6 +765,15 @@ offers <- offers %>%
 unique(offers$phase)
 ```
 
+Finally, let's join the number of preferences back into this dataset.
+
+```{r offers-join-prefs}
+# Add number of preferences into offers
+offers <- offers %>% 
+  left_join(prefs)
+```
+
+
 ## Performance
 
 From this dataset we really need to select one or two good measures of performance for KS2 and KS4, along with the URN so that we can join back to school.
@@ -896,8 +924,9 @@ These columns can all come from the `offers` and `info` data frames.
 
 ```{r dim-la-build}
 # Build out the local authority dimension table
-dim_la <- offers_la %>% 
+dim_la <- offers %>% 
   select(la_code,
+         gss_la_code,
          la_name, 
          region_code,
          region_name) %>% 
@@ -906,12 +935,7 @@ dim_la <- offers_la %>%
   mutate(region_code = case_when(la_code == 420 ~ "E12000009",
                                  TRUE ~ region_code),
          region_name = case_when(la_code == 420 ~ "South West",
-                                 TRUE ~ region_name)) %>% 
-  select(la_code,
-         la_name,
-         gss_la_code,
-         region_code,
-         region_name)
+                                 TRUE ~ region_name))
 
 # Check the result
 head(dim_la)
@@ -1062,9 +1086,6 @@ star_schema %>%
 
 These fields can all come from the `info` table.
 
-\# Build out the school fact table
-
-
 ```{r school-fact-build}
 # Define columns to include
 fct_school_cols <- star_schema %>% 
@@ -1106,7 +1127,7 @@ star_schema %>%
   kable()
 ```
 
-These columns all come from `offers` and `performance`.
+These columns all come from `offers`, `prefs` and `performance`.
 
 ```{r build-fact-school-year}
 # Define columns to include
@@ -1133,6 +1154,11 @@ fct_school_year <- offers %>%
                    year,
                    phase_name = phase,
                    all_of(fct_school_year_cols_perf))) %>% 
+  left_join(select(prefs,
+                   year,
+                   la_code,
+                   phase_name = phase,
+                   number_of_preferences)) %>% 
   # join school key (via bridge)
   inner_join(brg_school) %>% 
   left_join(select(dim_school,
