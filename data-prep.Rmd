@@ -451,8 +451,7 @@ offla <- src_offla %>%
             country_name,
             one_of_the_three_preference_offers,
             ends_with("_percent"))) %>% 
-  type_convert(na = "c",
-               guess_integer = TRUE)
+  type_convert(na = "c")
 ```
 
 Now we can rename the columns more appropriately.
@@ -482,7 +481,7 @@ Let's make the necessary replacements.
 
 ```{r offla-recode-la}
 # Recode the LA identifier fields in offla
-prefs <- prefs %>% 
+offla <- offla %>% 
   mutate(
     la_code = case_when(
       la_code == 837 ~ 839,
@@ -510,7 +509,7 @@ prefs <- prefs %>%
   )
 
 # Extra rows because Northamptonshire is now two distinct regions
-prefs_extra <- tibble(
+offla_extra <- tibble(
   year = c(202122, 202122, 202021, 202021, 201920, 201920, 201819, 201819,
            201718, 201718, 201617, 201617, 201516, 201516, 201415, 201415),
   region_code = rep("E12000004", 16),
@@ -523,36 +522,36 @@ prefs_extra <- tibble(
 )
 
 # Bind extra rows on to prefs
-prefs <- prefs %>% 
-  bind_rows(prefs_extra) %>% 
+offla <- offla %>% 
+  bind_rows(offla_extra) %>% 
   group_by_at(vars(-number_of_preferences)) %>% 
   slice_max(number_of_preferences) %>% 
   ungroup() %>% 
   distinct()
 
 # Check the results
-prefs_la <- prefs %>% 
+offla_la <- offla %>% 
   select(la_code, gss_la_code, la_name) %>% 
   distinct() %>% 
   arrange(la_name, la_code) 
 
-prefs_la %>% 
+offla_la %>% 
   anti_join(info_la)
 ```
 
-```{r prefs-review-year}
+```{r offla-review-year}
 # Review the unique values of year
-unique(prefs$year)
+unique(offla$year)
 ```
 
 These values should be recoded to match the `year_key` in the calendar table. We need to extract the academic start year, which is the first 4 digits of the value.
 
-```{r prefs-recode-year}
+```{r offla-recode-year}
 # Recode the values in year
-prefs$year <- as.numeric(str_extract(prefs$year, "^\\d{4}"))
+offla$year <- as.numeric(str_extract(offla$year, "^\\d{4}"))
 
 # Check the results
-unique(prefs$year)
+unique(offla$year)
 ```
 
 ### By School
@@ -747,14 +746,6 @@ offers <- offers %>%
 unique(offers$phase)
 ```
 
-Finally, let's join the number of preferences back into this dataset.
-
-```{r offers-join-prefs}
-# Add number of preferences into offers
-offers <- offers %>% 
-  left_join(prefs)
-```
-
 ## Performance
 
 From this dataset we really need to select one or two good measures of performance for KS2 and KS4, along with the URN so that we can join back to school.
@@ -856,6 +847,7 @@ The matrix below shows the fact and dimension tables that I intend to create for
 
 | Fact/Dimension   | dim_la | dim_school | dim_calendar | dim_phase |
 |------------------|:------:|:----------:|:------------:|:---------:|
+| fact_la_year     |   x    |            |      x       |     x     |
 | fact_school_year |   x    |     x      |      x       |     x     |
 | fact_school      |   x    |     x      |              |           |
 
@@ -866,7 +858,7 @@ To build out the dimensional model for this data, we need to review all of the c
 ```{r describe-df}
 # Create a vector of dfs to describe
 data <- list("info" = info,
-             "prefs" = prefs,
+             "offers_by_la" = offla,
              "offers" = offers,
              "performance" = performance,
              "phase" = phase,
@@ -1094,7 +1086,16 @@ fct_school <- info %>%
   # select final columns
   select(school_key,
          la_key,
-         all_of(fct_school_cols))
+         all_of(fct_school_cols)) %>% 
+  # deal with duplicates
+  group_by(school_key,
+           la_key) %>% 
+  mutate(fct_school_count = n()) %>% 
+  summarise_all(mean, na.rm = TRUE) %>% 
+  ungroup() %>% 
+  mutate(fct_school_flg = if_else(fct_school_count == 1,
+                                  "Actual",
+                                  "Average"))
 ```
 
 ### School Year Facts
@@ -1135,11 +1136,6 @@ fct_school_year <- offers %>%
                    year,
                    phase_name = phase,
                    all_of(fct_school_year_cols_perf))) %>% 
-  left_join(select(prefs,
-                   year,
-                   la_code,
-                   phase_name = phase,
-                   number_of_preferences)) %>% 
   # join school key (via bridge)
   inner_join(brg_school) %>% 
   left_join(select(dim_school,
@@ -1160,20 +1156,81 @@ fct_school_year <- offers %>%
          year_key = year,
          phase_key,
          all_of(fct_school_year_cols_offers),
-         all_of(fct_school_year_cols_perf),
-         number_of_preferences) %>% 
+         all_of(fct_school_year_cols_perf)) %>% 
   # deal with duplicates
   group_by(school_key,
            la_key,
            phase_key,
            year_key) %>% 
-  mutate(fact_count = n()) %>% 
+  mutate(fct_school_year_count = n()) %>% 
   summarise_all(mean, na.rm = TRUE) %>% 
   ungroup() %>% 
-  mutate(fact_flg = if_else(fact_count == 1,
-                            "Actual",
-                            "Average"))
+  mutate(fct_school_year_flg = if_else(fct_school_year_count == 1,
+                                       "Actual",
+                                       "Average"))
 ```
+
+### Local Authority Year Facts
+
+To build the LA year facts table we need the following columns:
+
+```{r la-year-fact-cols}
+# Which columns are needed for the LA year fact table?
+star_schema %>% 
+  filter(model_table == "fact_la_year") %>% 
+  kable()
+```
+
+These columns all come from `offers_by_la`.
+
+```{r build-fact-la-year}
+# Define columns to include
+fct_la_year_cols <- star_schema %>% 
+  filter(model_table == "fact_la_year") %>% 
+  pull(source_field)
+
+# Build out the LA year fact table
+fct_la_year <- offla %>% 
+  select(la_code,
+         la_name,
+         year,
+         phase_name = phase,
+         all_of(fct_la_year_cols)) %>% 
+  # join la key
+  left_join(select(dim_la,
+                   la_code,
+                   la_name,
+                   la_key)) %>% 
+  # join phase key
+  left_join(select(dim_phase,
+                   phase_name,
+                   phase_key)) %>% 
+  # select final columns
+  select(la_key,
+         year_key = year,
+         phase_key,
+         all_of(fct_la_year_cols)) %>% 
+  # deal with duplicates
+  group_by(la_key,
+           phase_key,
+           year_key) %>% 
+  mutate(fct_la_year_count = n()) %>% 
+  summarise_all(mean, na.rm = TRUE) %>% 
+  ungroup() %>% 
+  mutate(fct_la_year_flg = if_else(fct_la_year_count == 1,
+                                   "Actual",
+                                   "Average"))
+```
+
+### All Facts
+Finally we can join together the three individual fact tables to create a single fact table which will be more useful for Tableau.
+```{r build-fact-all}
+# Build a table for all facts
+fct_all <- fct_school_year %>% 
+  left_join(fct_school) %>% 
+  left_join(fct_la_year)
+```
+
 
 # Export data
 
@@ -1202,4 +1259,9 @@ save(fct_school, file = paste0(export_path,
 save(fct_school_year, file = paste0(export_path,
                                     "fct_school_year.Rda"))
 
+save(fct_la_year, file = paste0(export_path,
+                                "fct_la_year.Rda"))
+
+save(fct_all, file = paste0(export_path,
+                            "fct_all.Rda"))
 ```

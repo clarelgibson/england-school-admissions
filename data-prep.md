@@ -10,9 +10,9 @@ Clare Gibson
 -   <a href="#read-data" id="toc-read-data">Read data</a>
     -   <a href="#info" id="toc-info">Info</a>
     -   <a href="#offers" id="toc-offers">Offers</a>
-        -   <a href="#by-school" id="toc-by-school">By School</a>
         -   <a href="#by-local-authority" id="toc-by-local-authority">By Local
             Authority</a>
+        -   <a href="#by-school" id="toc-by-school">By School</a>
     -   <a href="#performance" id="toc-performance">Performance</a>
     -   <a href="#phase" id="toc-phase">Phase</a>
     -   <a href="#calendar" id="toc-calendar">Calendar</a>
@@ -35,6 +35,9 @@ Clare Gibson
         -   <a href="#school-facts" id="toc-school-facts">School Facts</a>
         -   <a href="#school-year-facts" id="toc-school-year-facts">School Year
             Facts</a>
+        -   <a href="#local-authority-year-facts"
+            id="toc-local-authority-year-facts">Local Authority Year Facts</a>
+        -   <a href="#all-facts" id="toc-all-facts">All Facts</a>
 -   <a href="#export-data" id="toc-export-data">Export data</a>
 
 # Setup
@@ -172,6 +175,21 @@ represents the latest available.
 
 ## Offers
 
+### By Local Authority
+
+This file contains data relating to the number of applications from
+offers made to applicants for secondary and primary school places since
+2014. The data is aggregated at the local authority level. This file
+will be important as our single source of truth for local
+authority-level measures (e.g. the number of preferences allowed on the
+application form and the total number of applications received).
+
+``` r
+# Read in the source data for offla
+src_offla_path <- "https://drive.google.com/file/d/12jONhUf3xSZdRbsUE_4tZRA014sIHO_D/view?usp=sharing"
+src_offla <- read_csv_gdrive(src_offla_path)
+```
+
 ### By School
 
 This file contains data relating to the number of offers made to
@@ -194,19 +212,6 @@ columns include some identifiers for time, geography and school, some
 descriptive dimensions for the number of preferences and type of school
 and some measures relating to the number of applications and offers
 made. Each row represents a single school for a single academic year.
-
-### By Local Authority
-
-This file is the same as the one above except that here, the data is
-aggregated at the local authority level. This file will be important as
-our single source of truth for local authority-level measures (e.g. the
-number of preferences allowed on the application form).
-
-``` r
-# Read in the source data for offers_la
-src_prefs_path <- "https://drive.google.com/file/d/12jONhUf3xSZdRbsUE_4tZRA014sIHO_D/view?usp=sharing"
-src_prefs <- read_csv_gdrive(src_prefs_path)
-```
 
 ## Performance
 
@@ -506,34 +511,7 @@ document for the latest reference data for these fields. This document
 is included in the Google Drive [ref
 folder](https://drive.google.com/drive/folders/1lsRDMfjSzabSF8HVJdF8ex5JM6rDRlSo?usp=sharing).
 
-``` r
-# Read in the reference file for local authority names
-src_la_ref_path <- "https://docs.google.com/spreadsheets/d/1Atbagsqr0KJZV5xWh64zzM3aHR9BK-Xzvawgw46jYPc/edit?usp=sharing"
-src_la_ref <- read_sheet(src_la_ref_path)
-
-head(src_la_ref)
-```
-
-    ## # A tibble: 6 × 3
-    ##   LAD21CD   LAD21NM              LAD21NMW
-    ##   <chr>     <chr>                <chr>   
-    ## 1 E06000001 Hartlepool           <NA>    
-    ## 2 E06000002 Middlesbrough        <NA>    
-    ## 3 E06000003 Redcar and Cleveland <NA>    
-    ## 4 E06000004 Stockton-on-Tees     <NA>    
-    ## 5 E06000005 Darlington           <NA>    
-    ## 6 E06000006 Halton               <NA>
-
-``` r
-# Clean the LA reference table
-la_ref <- src_la_ref %>% 
-  select(gss_la_code = LAD21CD,
-         la_name = LAD21NM) %>% 
-  arrange(la_name)
-```
-
-Now, let’s review the unique values of LA code and name in the `info`
-df.
+Let’s review the unique values of LA code and name in the `info` df.
 
 ``` r
 # Review the unique values in la_name
@@ -808,30 +786,31 @@ unique(info$ofsted_rating_score)
 
 ### By Local Authority
 
-From the `src_offersla` we only need to keep the identifiers for local
-authority, year and phase as well as the number of preferences. We
-should also filter the source data to keep only data at the
-`geographic_level` of “Local authority”.
+From the `src_offla` dataset we need to keep the identifiers for local
+authority, year and phase as well as the numerical data. We should
+filter the source data to keep only data at the `geographic_level` of
+“Local authority”.
 
 ``` r
-# Select the required columns from prefs
-prefs <- src_prefs %>% 
+# Select the required columns from offla and correct data types
+offla <- src_offla %>% 
+  mutate(across(everything(), as.character)) %>% 
   filter(geographic_level == "Local authority") %>% 
-  select(time_period,
-         region_code,
-         region_name,
-         new_la_code,
-         old_la_code,
-         la_name,
-         school_phase,
-         no_of_preferences)
+  select(-c(nc_year_admission,
+            time_identifier,
+            geographic_level,
+            country_code,
+            country_name,
+            one_of_the_three_preference_offers,
+            ends_with("_percent"))) %>% 
+  type_convert(na = "c")
 ```
 
 Now we can rename the columns more appropriately.
 
 ``` r
 # Rename the columns
-prefs <- prefs %>% 
+offla <- offla %>% 
   rename(year = time_period,
          gss_la_code = new_la_code,
          la_code = old_la_code,
@@ -839,21 +818,13 @@ prefs <- prefs %>%
          number_of_preferences = no_of_preferences)
 ```
 
-Now we can check and correct the data types.
-
-``` r
-# Correct data types in offers_la
-prefs <- prefs %>% 
-  mutate(number_of_preferences = as.numeric(number_of_preferences))
-```
-
 Now let’s review the entries for the local authority identifiers and
-check which rows in `prefs` are not present in `info_la` and therefore
+check which rows in `offla` are not present in `info_la` and therefore
 need to be changed.
 
 ``` r
 # Review the unique values of la_name
-prefs %>% 
+offla %>% 
   select(la_code, gss_la_code, la_name) %>% 
   distinct() %>% 
   arrange(la_name, la_code) %>% 
@@ -874,8 +845,8 @@ prefs %>%
 Let’s make the necessary replacements.
 
 ``` r
-# Recode the LA identifier fields in prefs_la
-prefs <- prefs %>% 
+# Recode the LA identifier fields in offla
+offla <- offla %>% 
   mutate(
     la_code = case_when(
       la_code == 837 ~ 839,
@@ -903,7 +874,7 @@ prefs <- prefs %>%
   )
 
 # Extra rows because Northamptonshire is now two distinct regions
-prefs_extra <- tibble(
+offla_extra <- tibble(
   year = c(202122, 202122, 202021, 202021, 201920, 201920, 201819, 201819,
            201718, 201718, 201617, 201617, 201516, 201516, 201415, 201415),
   region_code = rep("E12000004", 16),
@@ -916,20 +887,20 @@ prefs_extra <- tibble(
 )
 
 # Bind extra rows on to prefs
-prefs <- prefs %>% 
-  bind_rows(prefs_extra) %>% 
+offla <- offla %>% 
+  bind_rows(offla_extra) %>% 
   group_by_at(vars(-number_of_preferences)) %>% 
   slice_max(number_of_preferences) %>% 
   ungroup() %>% 
   distinct()
 
 # Check the results
-prefs_la <- prefs %>% 
+offla_la <- offla %>% 
   select(la_code, gss_la_code, la_name) %>% 
   distinct() %>% 
   arrange(la_name, la_code) 
 
-prefs_la %>% 
+offla_la %>% 
   anti_join(info_la)
 ```
 
@@ -939,7 +910,7 @@ prefs_la %>%
 
 ``` r
 # Review the unique values of year
-unique(prefs$year)
+unique(offla$year)
 ```
 
     ## [1] 201415 201516 201617 201718 201819 201920 202021 202122 202223
@@ -950,10 +921,10 @@ digits of the value.
 
 ``` r
 # Recode the values in year
-prefs$year <- as.numeric(str_extract(prefs$year, "^\\d{4}"))
+offla$year <- as.numeric(str_extract(offla$year, "^\\d{4}"))
 
 # Check the results
-unique(prefs$year)
+unique(offla$year)
 ```
 
     ## [1] 2014 2015 2016 2017 2018 2019 2020 2021 2022
@@ -1233,14 +1204,6 @@ unique(offers$phase)
 
     ## [1] "Primary"   "Secondary"
 
-Finally, let’s join the number of preferences back into this dataset.
-
-``` r
-# Add number of preferences into offers
-offers <- offers %>% 
-  left_join(prefs)
-```
-
 ## Performance
 
 From this dataset we really need to select one or two good measures of
@@ -1386,6 +1349,7 @@ create for this model and the relationships between them.
 
 | Fact/Dimension   | dim_la | dim_school | dim_calendar | dim_phase |
 |------------------|:------:|:----------:|:------------:|:---------:|
+| fact_la_year     |   x    |            |      x       |     x     |
 | fact_school_year |   x    |     x      |      x       |     x     |
 | fact_school      |   x    |     x      |              |           |
 
@@ -1399,7 +1363,7 @@ in the model. The custom function `describe_df()` contained in the
 ``` r
 # Create a vector of dfs to describe
 data <- list("info" = info,
-             "prefs" = prefs,
+             "offers_by_la" = offla,
              "offers" = offers,
              "performance" = performance,
              "phase" = phase,
@@ -1444,11 +1408,11 @@ star_schema %>%
 | info         | la_code      | 891                  | dim_la      |
 | info         | la_name      | Nottinghamshire      | dim_la      |
 | info         | gss_la_code  | E10000024            | dim_la      |
-| prefs        | region_code  | E13000001            | dim_la      |
-| prefs        | region_name  | Inner London         | dim_la      |
-| prefs        | gss_la_code  | E09000001            | dim_la      |
-| prefs        | la_code      | 201                  | dim_la      |
-| prefs        | la_name      | City of London       | dim_la      |
+| offers_by_la | region_code  | E12000001            | dim_la      |
+| offers_by_la | region_name  | North East           | dim_la      |
+| offers_by_la | gss_la_code  | E06000004            | dim_la      |
+| offers_by_la | la_code      | 808                  | dim_la      |
+| offers_by_la | la_name      | Stockton-on-Tees     | dim_la      |
 | offers       | region_code  | E13000001            | dim_la      |
 | offers       | region_name  | Inner London         | dim_la      |
 | offers       | la_code      | 201                  | dim_la      |
@@ -1652,7 +1616,7 @@ star_schema %>%
 
 | source_table | source_field          | source_value_example | model_table |
 |:-------------|:----------------------|:---------------------|:------------|
-| prefs        | phase                 | Primary              | dim_phase   |
+| offers_by_la | phase                 | Primary              | dim_phase   |
 | offers       | phase                 | Primary              | dim_phase   |
 | performance  | phase                 | Primary              | dim_phase   |
 | phase        | phase_key             | 1                    | dim_phase   |
@@ -1731,7 +1695,16 @@ fct_school <- info %>%
   # select final columns
   select(school_key,
          la_key,
-         all_of(fct_school_cols))
+         all_of(fct_school_cols)) %>% 
+  # deal with duplicates
+  group_by(school_key,
+           la_key) %>% 
+  mutate(fct_school_count = n()) %>% 
+  summarise_all(mean, na.rm = TRUE) %>% 
+  ungroup() %>% 
+  mutate(fct_school_flg = if_else(fct_school_count == 1,
+                                  "Actual",
+                                  "Average"))
 ```
 
 ### School Year Facts
@@ -1747,7 +1720,6 @@ star_schema %>%
 
 | source_table | source_field                         | source_value_example | model_table      |
 |:-------------|:-------------------------------------|:---------------------|:-----------------|
-| prefs        | number_of_preferences                | 6                    | fact_school_year |
 | offers       | total_number_places_offered          | 30                   | fact_school_year |
 | offers       | number_preferred_offers              | 30                   | fact_school_year |
 | offers       | number_1st_preference_offers         | 30                   | fact_school_year |
@@ -1794,11 +1766,6 @@ fct_school_year <- offers %>%
                    year,
                    phase_name = phase,
                    all_of(fct_school_year_cols_perf))) %>% 
-  left_join(select(prefs,
-                   year,
-                   la_code,
-                   phase_name = phase,
-                   number_of_preferences)) %>% 
   # join school key (via bridge)
   inner_join(brg_school) %>% 
   left_join(select(dim_school,
@@ -1819,19 +1786,98 @@ fct_school_year <- offers %>%
          year_key = year,
          phase_key,
          all_of(fct_school_year_cols_offers),
-         all_of(fct_school_year_cols_perf),
-         number_of_preferences) %>% 
+         all_of(fct_school_year_cols_perf)) %>% 
   # deal with duplicates
   group_by(school_key,
            la_key,
            phase_key,
            year_key) %>% 
-  mutate(fact_count = n()) %>% 
+  mutate(fct_school_year_count = n()) %>% 
   summarise_all(mean, na.rm = TRUE) %>% 
   ungroup() %>% 
-  mutate(fact_flg = if_else(fact_count == 1,
-                            "Actual",
-                            "Average"))
+  mutate(fct_school_year_flg = if_else(fct_school_year_count == 1,
+                                       "Actual",
+                                       "Average"))
+```
+
+### Local Authority Year Facts
+
+To build the LA year facts table we need the following columns:
+
+``` r
+# Which columns are needed for the LA year fact table?
+star_schema %>% 
+  filter(model_table == "fact_la_year") %>% 
+  kable()
+```
+
+| source_table | source_field                | source_value_example | model_table  |
+|:-------------|:----------------------------|:---------------------|:-------------|
+| offers_by_la | admission_numbers           | 2626                 | fact_la_year |
+| offers_by_la | applications_received       | 2386                 | fact_la_year |
+| offers_by_la | online_applications         | 1638                 | fact_la_year |
+| offers_by_la | number_of_preferences       | 3                    | fact_la_year |
+| offers_by_la | first_preference_offers     | 2233                 | fact_la_year |
+| offers_by_la | second_preference_offers    | 97                   | fact_la_year |
+| offers_by_la | third_preference_offers     | 25                   | fact_la_year |
+| offers_by_la | preferred_school_offer      | 2355                 | fact_la_year |
+| offers_by_la | non_preferred_offer         | 0                    | fact_la_year |
+| offers_by_la | no_offer                    | 31                   | fact_la_year |
+| offers_by_la | schools_in_la_offer         | 2333                 | fact_la_year |
+| offers_by_la | schools_in_another_la_offer | 22                   | fact_la_year |
+| offers_by_la | offers_to_nonapplicants     | 0                    | fact_la_year |
+
+These columns all come from `offers_by_la`.
+
+``` r
+# Define columns to include
+fct_la_year_cols <- star_schema %>% 
+  filter(model_table == "fact_la_year") %>% 
+  pull(source_field)
+
+# Build out the LA year fact table
+fct_la_year <- offla %>% 
+  select(la_code,
+         la_name,
+         year,
+         phase_name = phase,
+         all_of(fct_la_year_cols)) %>% 
+  # join la key
+  left_join(select(dim_la,
+                   la_code,
+                   la_name,
+                   la_key)) %>% 
+  # join phase key
+  left_join(select(dim_phase,
+                   phase_name,
+                   phase_key)) %>% 
+  # select final columns
+  select(la_key,
+         year_key = year,
+         phase_key,
+         all_of(fct_la_year_cols)) %>% 
+  # deal with duplicates
+  group_by(la_key,
+           phase_key,
+           year_key) %>% 
+  mutate(fct_la_year_count = n()) %>% 
+  summarise_all(mean, na.rm = TRUE) %>% 
+  ungroup() %>% 
+  mutate(fct_la_year_flg = if_else(fct_la_year_count == 1,
+                                   "Actual",
+                                   "Average"))
+```
+
+### All Facts
+
+Finally we can join together the three individual fact tables to create
+a single fact table which will be more useful for Tableau.
+
+``` r
+# Build a table for all facts
+fct_all <- fct_school_year %>% 
+  left_join(fct_school) %>% 
+  left_join(fct_la_year)
 ```
 
 # Export data
@@ -1861,4 +1907,10 @@ save(fct_school, file = paste0(export_path,
 
 save(fct_school_year, file = paste0(export_path,
                                     "fct_school_year.Rda"))
+
+save(fct_la_year, file = paste0(export_path,
+                                "fct_la_year.Rda"))
+
+save(fct_all, file = paste0(export_path,
+                            "fct_all.Rda"))
 ```
