@@ -8,6 +8,7 @@ output:
 ---
 
 # Setup
+
 ```{r setup}
 # Load packages
 library(knitr)          # for Rmd options
@@ -63,6 +64,16 @@ This data frame has `r nrow(src_info)` rows and `r ncol(src_info)` columns. The 
 
 ## Offers
 
+### By Local Authority
+
+This file contains data relating to the number of applications from offers made to applicants for secondary and primary school places since 2014. The data is aggregated at the local authority level. This file will be important as our single source of truth for local authority-level measures (e.g. the number of preferences allowed on the application form and the total number of applications received).
+
+```{r offla-read}
+# Read in the source data for offla
+src_offla_path <- "https://drive.google.com/file/d/12jONhUf3xSZdRbsUE_4tZRA014sIHO_D/view?usp=sharing"
+src_offla <- read_csv_gdrive(src_offla_path)
+```
+
 ### By School
 
 This file contains data relating to the number of offers made to applicants for secondary and primary school places since 2014, and the proportion which received preferred offers. Data is aggregated at the school level. Further details including an explanation of the terminology used in this dataset can be found [here](https://drive.google.com/drive/u/1/folders/1bbnbd9d4HDn3yXIIhaRSigZV46KpCyKy). Once again, we can connect to it through Google Drive.
@@ -74,16 +85,6 @@ src_offers <- read_csv_gdrive(src_offers_path)
 ```
 
 From the code outputs above, we can see that this data frame has `r nrow(src_offers)` rows and `r ncol(src_offers)` columns (a mix of character and numeric data types). The columns include some identifiers for time, geography and school, some descriptive dimensions for the number of preferences and type of school and some measures relating to the number of applications and offers made. Each row represents a single school for a single academic year.
-
-### By Local Authority
-
-This file is the same as the one above except that here, the data is aggregated at the local authority level. This file will be important as our single source of truth for local authority-level measures (e.g. the number of preferences allowed on the application form).
-
-```{r prefs-read}
-# Read in the source data for offers_la
-src_prefs_path <- "https://drive.google.com/file/d/12jONhUf3xSZdRbsUE_4tZRA014sIHO_D/view?usp=sharing"
-src_prefs <- read_csv_gdrive(src_prefs_path)
-```
 
 ## Performance
 
@@ -288,23 +289,8 @@ info %>%
 
 The `la_name` and `la_code` fields need to be checked to ensure they are consistent. I refer to the [Office for National Statistics](https://www.ons.gov.uk) [Local Authority Districts (December 2021) Names and Codes in the United Kingdom](https://geoportal.statistics.gov.uk/documents/c4f647d8a4a648d7b4a1ebf057f8aaa3/about) document for the latest reference data for these fields. This document is included in the Google Drive [ref folder](https://drive.google.com/drive/folders/1lsRDMfjSzabSF8HVJdF8ex5JM6rDRlSo?usp=sharing).
 
-```{r la-ref-read}
-# Read in the reference file for local authority names
-src_la_ref_path <- "https://docs.google.com/spreadsheets/d/1Atbagsqr0KJZV5xWh64zzM3aHR9BK-Xzvawgw46jYPc/edit?usp=sharing"
-src_la_ref <- read_sheet(src_la_ref_path)
+Let's review the unique values of LA code and name in the `info` df.
 
-head(src_la_ref)
-```
-
-```{r la-ref-clean}
-# Clean the LA reference table
-la_ref <- src_la_ref %>% 
-  select(gss_la_code = LAD21CD,
-         la_name = LAD21NM) %>% 
-  arrange(la_name)
-```
-
-Now, let's review the unique values of LA code and name in the `info` df.
 ```{r info-review-la-names}
 # Review the unique values in la_name
 info %>% 
@@ -312,6 +298,7 @@ info %>%
   distinct() %>% 
   arrange(la_name, la_code, gss_la_code)
 ```
+
 We can see that some of the `gss-la-code` values here are wrong. It looks like a value of `X999999` has been used where the true value could not be determined when the source data was put together. We need to replace this value with the correct value according to the reference table.
 
 ```{r info-clean-gss-code}
@@ -449,27 +436,30 @@ unique(info$ofsted_rating_score)
 ## Offers
 
 ### By Local Authority
-From the `src_offersla` we only need to keep the identifiers for local authority, year and phase as well as the number of preferences. We should also filter the source data to keep only data at the `geographic_level` of "Local authority".
 
-```{r prefs-select-cols}
-# Select the required columns from prefs
-prefs <- src_prefs %>% 
+From the `src_offla` dataset we need to keep the identifiers for local authority, year and phase as well as the numerical data. We should filter the source data to keep only data at the `geographic_level` of "Local authority".
+
+```{r offla-select-cols}
+# Select the required columns from offla and correct data types
+offla <- src_offla %>% 
+  mutate(across(everything(), as.character)) %>% 
   filter(geographic_level == "Local authority") %>% 
-  select(time_period,
-         region_code,
-         region_name,
-         new_la_code,
-         old_la_code,
-         la_name,
-         school_phase,
-         no_of_preferences)
+  select(-c(nc_year_admission,
+            time_identifier,
+            geographic_level,
+            country_code,
+            country_name,
+            one_of_the_three_preference_offers,
+            ends_with("_percent"))) %>% 
+  type_convert(na = "c",
+               guess_integer = TRUE)
 ```
 
 Now we can rename the columns more appropriately.
 
-```{r prefs-rename}
+```{r offla-rename}
 # Rename the columns
-prefs <- prefs %>% 
+offla <- offla %>% 
   rename(year = time_period,
          gss_la_code = new_la_code,
          la_code = old_la_code,
@@ -477,19 +467,11 @@ prefs <- prefs %>%
          number_of_preferences = no_of_preferences)
 ```
 
-Now we can check and correct the data types.
+Now let's review the entries for the local authority identifiers and check which rows in `offla` are not present in `info_la` and therefore need to be changed.
 
-```{r prefs-type}
-# Correct data types in offers_la
-prefs <- prefs %>% 
-  mutate(number_of_preferences = as.numeric(number_of_preferences))
-```
-
-Now let's review the entries for the local authority identifiers and check which rows in `prefs` are not present in `info_la` and therefore need to be changed.
-
-```{r prefs-la-names}
+```{r offla-la-names}
 # Review the unique values of la_name
-prefs %>% 
+offla %>% 
   select(la_code, gss_la_code, la_name) %>% 
   distinct() %>% 
   arrange(la_name, la_code) %>% 
@@ -498,8 +480,8 @@ prefs %>%
 
 Let's make the necessary replacements.
 
-```{r prefs-recode-la}
-# Recode the LA identifier fields in prefs_la
+```{r offla-recode-la}
+# Recode the LA identifier fields in offla
 prefs <- prefs %>% 
   mutate(
     la_code = case_when(
@@ -772,7 +754,6 @@ Finally, let's join the number of preferences back into this dataset.
 offers <- offers %>% 
   left_join(prefs)
 ```
-
 
 ## Performance
 
@@ -1195,6 +1176,7 @@ fct_school_year <- offers %>%
 ```
 
 # Export data
+
 The final tables for the data model need to be saved as Rdata files, so that they can be accessed by Tableau.
 
 ```{r export-data}
@@ -1221,4 +1203,3 @@ save(fct_school_year, file = paste0(export_path,
                                     "fct_school_year.Rda"))
 
 ```
-
