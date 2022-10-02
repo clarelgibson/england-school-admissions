@@ -817,7 +817,11 @@ performance <- perf_ks2 %>%
          writing_progress = writprog,
          maths_progress = matprog,
          progress_8 = p8mea,
-         attainment_8 = att8scr)
+         attainment_8 = att8scr) %>% 
+  left_join(select(info,
+                   urn,
+                   la_code,
+                   la_name))
 
 # View the head
 head(performance)
@@ -1046,58 +1050,6 @@ dim_calendar <- calendar
 
 ## Facts
 
-### School Facts
-
-To build the school facts table we will need to following columns, plus keys for all dimensions:
-
-```{r school-fact-cols}
-# Which columns are needed for the school fact table?
-star_schema %>% 
-  filter(model_table == "fact_school") %>% 
-  kable()
-```
-
-These fields can all come from the `info` table.
-
-```{r school-fact-build}
-# Define columns to include
-fct_school_cols <- star_schema %>% 
-  filter(model_table == "fact_school",
-         source_table == "info") %>% 
-  pull(source_field)
-
-# Build out the school fact table
-fct_school <- info %>% 
-  # select columns
-  select(linked_urn = urn,
-         la_code,
-         la_name,
-         all_of(fct_school_cols)) %>% 
-  # join school key (via bridge)
-  left_join(brg_school) %>% 
-  left_join(select(dim_school,
-                   master_urn = urn,
-                   school_key)) %>% 
-  # join la key
-  left_join(select(dim_la,
-                   la_code,
-                   la_name,
-                   la_key)) %>% 
-  # select final columns
-  select(school_key,
-         la_key,
-         all_of(fct_school_cols)) %>% 
-  # deal with duplicates
-  group_by(school_key,
-           la_key) %>% 
-  mutate(fct_school_count = n()) %>% 
-  summarise_all(mean, na.rm = TRUE) %>% 
-  ungroup() %>% 
-  mutate(fct_school_flg = if_else(fct_school_count == 1,
-                                  "Actual",
-                                  "Average"))
-```
-
 ### School Year Facts
 
 To build the school year facts table we need the following columns:
@@ -1123,6 +1075,19 @@ fct_school_year_cols_perf <- star_schema %>%
          source_table == "performance") %>% 
   pull(source_field)
 
+# Define the performance data to include
+fct_school_year_perf <- performance %>% 
+  select(linked_urn = urn,
+         year,
+         phase_name = phase,
+         all_of(fct_school_year_cols_perf)) %>% 
+  inner_join(brg_school) %>% 
+  left_join(select(info,
+                   master_urn = urn,
+                   la_code,
+                   la_name)) %>% 
+  select(-master_urn)
+
 # Build out the school year fact table
 fct_school_year <- offers %>% 
   select(linked_urn = urn,
@@ -1131,11 +1096,7 @@ fct_school_year <- offers %>%
          year,
          phase_name = phase,
          all_of(fct_school_year_cols_offers)) %>% 
-  left_join(select(performance,
-                   linked_urn = urn,
-                   year,
-                   phase_name = phase,
-                   all_of(fct_school_year_cols_perf))) %>% 
+  full_join(fct_school_year_perf) %>% 
   # join school key (via bridge)
   inner_join(brg_school) %>% 
   left_join(select(dim_school,
@@ -1168,6 +1129,68 @@ fct_school_year <- offers %>%
   mutate(fct_school_year_flg = if_else(fct_school_year_count == 1,
                                        "Actual",
                                        "Average"))
+```
+
+### School Facts
+
+To build the school facts table we will need to following columns, plus keys for all dimensions:
+
+```{r school-fact-cols}
+# Which columns are needed for the school fact table?
+star_schema %>% 
+  filter(model_table == "fact_school") %>% 
+  kable()
+```
+
+These fields can all come from the `info` table.
+
+```{r school-fact-build}
+# Define columns to include
+fct_school_cols <- star_schema %>% 
+  filter(model_table == "fact_school",
+         source_table == "info") %>% 
+  pull(source_field)
+
+# Build out the school fact table
+fct_school <- info %>% 
+  # select columns
+  select(linked_urn = urn,
+         la_code,
+         la_name,
+         education_phase,
+         all_of(fct_school_cols)) %>% 
+  # join school key (via bridge)
+  left_join(brg_school) %>% 
+  left_join(select(dim_school,
+                   master_urn = urn,
+                   school_key)) %>% 
+  # join la key
+  left_join(select(dim_la,
+                   la_code,
+                   la_name,
+                   la_key)) %>% 
+  # join phase key
+  left_join(select(fct_school_year,
+                   school_key,
+                   phase_key)) %>% 
+  mutate(phase_key = if_else(is.na(phase_key),
+                             2,
+                             phase_key)) %>% 
+  # select final columns
+  select(school_key,
+         la_key,
+         phase_key,
+         all_of(fct_school_cols)) %>% 
+  # deal with duplicates
+  group_by(school_key,
+           la_key,
+           phase_key) %>% 
+  mutate(fct_school_count = n()) %>% 
+  summarise_all(mean, na.rm = TRUE) %>% 
+  ungroup() %>% 
+  mutate(fct_school_flg = if_else(fct_school_count == 1,
+                                  "Actual",
+                                  "Average"))
 ```
 
 ### Local Authority Year Facts
