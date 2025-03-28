@@ -11,7 +11,7 @@
 <br />
 <div align="center">
   <a href="https://github.com/clarelgibson/england-school-admissions">
-    <img src="images/open-book.png" alt="School Admissions Dashboard Logo" height="80">
+    <img src="images/icons8-school-100.png" alt="School Admissions Dashboard Logo" height="80">
   </a>
 
 <h3 align="center">England School Admissions</h3>
